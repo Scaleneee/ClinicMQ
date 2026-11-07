@@ -3,7 +3,6 @@
 import os
 from pathlib import Path
 
-import dj_database_url
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -28,10 +27,10 @@ INSTALLED_APPS = [
     # ClinicMQ apps
     "accounts",
     "patients",
-    "appointments",
     "queueing",
     "consultation",
     "pharmacy",
+    "billing",
 ]
 
 MIDDLEWARE = [
@@ -64,9 +63,7 @@ TEMPLATES = [
 WSGI_APPLICATION = "clinicmq.wsgi.application"
 
 
-# Database
-# Set DATABASE_URL in .env to use Supabase Postgres (Session pooler URL).
-# Without it, Django falls back to a local SQLite file.
+# Database: Supabase Postgres (Session pooler). Values come from DB_* in .env.
 
 DATABASES = {
     "default": {
@@ -77,10 +74,10 @@ DATABASES = {
         "HOST": os.environ.get("DB_HOST"),
         "PORT": os.environ.get("DB_PORT"),
         "OPTIONS": {"sslmode": "require"},
+        "CONN_MAX_AGE": 60,
+        "CONN_HEALTH_CHECKS": True,
     }
 }
-if DATABASES["default"]["ENGINE"] == "django.db.backends.postgresql":
-    DATABASES["default"].setdefault("OPTIONS", {})["sslmode"] = "require"
 
 
 # Auth

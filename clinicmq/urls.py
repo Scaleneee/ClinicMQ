@@ -8,8 +8,8 @@ urlpatterns = [
     path("accounts/", include("django.contrib.auth.urls")),  # login, logout, password reset
     path("accounts/", include("accounts.urls")),
     path("patients/", include("patients.urls")),
-    path("appointments/", include("appointments.urls")),
     path("queue/", include("queueing.urls")),
     path("consultation/", include("consultation.urls")),
     path("pharmacy/", include("pharmacy.urls")),
+    path("billing/", include("billing.urls")),
 ]

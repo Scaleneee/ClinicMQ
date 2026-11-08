@@ -24,7 +24,6 @@ VALID_GENDERS = {"M", "F"}
 # ------------------------------------------------
 # Normalizing (clean user input before validating)
 # ------------------------------------------------
-
 # IC Number
 def normalize_ic(raw: str) -> str:
     # Accept "071126070736" or "07112-07-0736" -> "071126-07-0736"
@@ -55,3 +54,24 @@ def normalize_phone(raw: str) -> str:
 def normalize_name(raw: str) -> str:
     # strim and collapse space, store in upper case 
     return " ".join((raw or "").split()).upper()
+
+# ------------------------------------------------
+# IC Helper Functions
+# ------------------------------------------------
+# return the birthday encoded in ic number
+def bday_from_ic(ic_no: str) -> date | None:
+    # get the year, month, day from ic_no, store as int
+    yy, mm, dd = int(ic_no[:2]), int(ic_no[2:4]), int(ic_no[4:6])
+    current_yy = timezone.localdate().year % 100 # 2026 -> 26
+
+    century = 2000 if current_yy >= yy else 1900
+    try:
+        return date(century + yy, mm, dd)
+    except ValueError:
+        return None
+
+# return the gender 
+def gender_from_ic(ic_no: str) -> str: 
+    # last digit of ic, odd = male; even = female
+    last_digit = int(ic_no[-1])
+    return "M" if last_digit % 2 == 1 else "F"

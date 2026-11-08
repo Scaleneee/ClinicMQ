@@ -75,3 +75,42 @@ def gender_from_ic(ic_no: str) -> str:
     # last digit of ic, odd = male; even = female
     last_digit = int(ic_no[-1])
     return "M" if last_digit % 2 == 1 else "F"
+
+# ------------------------------------------------
+# Validation Check
+# ------------------------------------------------
+def validate_patient_data(*, ic_no, full_name, gender, date_of_birth,
+                           phone, email=None, exclude_patient_id=None) -> None:
+    # Raise ValidationError with field-specific messages if anything is wrong.
+    errors = {}
+
+    # IC format + uniqueness
+    if not IC_PATTERN.match(ic_no):
+        # invalid format
+        errors["ic_no"] = "IC muse be in the format ######-##-####."
+
+    else:
+        dup = Patient.objects.filter(ic_no=ic_no)
+        if(exclude_patient_id):
+            dup = dup.exclude(pk=exclude_patient_id)
+        if dup.exists():
+            errors["ic_no"] = "A patient with this IC is already registered."
+
+    # Name
+    if not full_name:
+        errors["full_name"] = "Full name is required."
+    elif len(full_name) > 100:
+        errors["full_name"] = "Full name must be at most 100 characters."
+
+    # Gender
+    if gender not in VALID_GENDERS:
+        errors["gender"] = "Gender must be M or F."
+
+    # Date of Birth
+    today = timezone.localdate()
+    if not date_of_birth:
+        errors["date_of_birth"] = "Date of birth is required."
+    elif date_of_birth > today:
+        errors["date_of_birth"] = "Date of birth cannot be in the future."
+
+        

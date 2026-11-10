@@ -113,4 +113,34 @@ def validate_patient_data(*, ic_no, full_name, gender, date_of_birth,
     elif date_of_birth > today:
         errors["date_of_birth"] = "Date of birth cannot be in the future."
 
-        
+
+    # Cross-check bday and gender against the IC
+    if "ic_no" not in errors or errors["ic_no"].startswith("A patient"):
+        # if the ic_no is valid
+        ic_bday = bday_from_ic(ic_no)
+
+        if ic_bday is None:
+            errors["ic_no"] = "IC contains an invalid date of birth."
+        else:
+            if date_of_birth and "date_of_birth" not in errors and date_of_birth != ic_bday:
+                # different bday from input and ic
+                errors["date_of_birth"] = f"Date of birth does not match IC ({ic_bday: %d/%m/%Y})."
+
+            # cross check gender
+            if gender in VALID_GENDERS and gender and gender != gender_from_ic(ic_no):
+                errors["gender"] = "Gender does not match IC."
+
+    # Phone
+    if not PHONE_PATTERN.match(phone):
+        errors["phone"] = "Phone must be in the format 01X-XXXXXXX."
+
+    # Email (optional)
+    if email:
+        from django.core.validators import validate_email
+        try:
+            validate_email(email)
+        except ValidationError:
+            errors["email"] = "Enter a valid email address."
+
+    if errors:
+        raise ValidationError(errors)

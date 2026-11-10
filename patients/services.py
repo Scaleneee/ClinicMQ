@@ -144,3 +144,49 @@ def validate_patient_data(*, ic_no, full_name, gender, date_of_birth,
 
     if errors:
         raise ValidationError(errors)
+
+# ------------------------------------------------
+# Main use case: nurse registers a walk-in patient
+# ------------------------------------------------
+# registerd_by: User
+@transaction.atomic
+def register_patient(*, registered_by, ic_no, full_name, gender, date_of_birth, 
+                     phone, email=None, address=None) -> Patient:
+    """
+    Register a new walk-in patient without login account
+
+    Raises:
+        PermissionDenied - caller is not a NURSE or ADMIN
+        ValidationError - any field is invalid or the IC already exists
+    """
+    # check Permission
+    if not registered_by.is_authenticated or registered_by.role not in ALLOWED_ROLES:
+        raise PermissionDenied("Only nurses or admins can register patients.")
+
+    # clean input
+    ic_no = normalize_ic(ic_no)
+    full_name = normalize_name(full_name)
+    gender = (gender or "").strip().upper()
+    phone = normalize_phone(phone)
+    email = (email or "").strip().lower() or None
+    address = (address or "").strip() or None
+
+    # Validate
+    validate_patient_data(ic_no=ic_no, full_name=full_name, gender=gender, 
+                          date_of_birth=date_of_birth, phone=phone, email=email)
+
+    # Save 
+    # IntegrityError covers two nurses saving the same IC at the same moment
+    try:
+        return Patient.objects.create(
+            ic_no=ic_no,
+            full_name=full_name,
+            gender=gender,
+            date_of_birth=date_of_birth,
+            phone=phone,
+            email=email,
+            address=address,
+            user=None,
+        )
+    except IntegrityError:
+        raise ValidationError({"ic_no": "A patient with this IC is already registered."})

@@ -190,3 +190,21 @@ def register_patient(*, registered_by, ic_no, full_name, gender, date_of_birth,
         )
     except IntegrityError:
         raise ValidationError({"ic_no": "A patient with this IC is already registered."})
+
+# ------------------------------------------------
+# Helpers the nurse screen will need
+# ------------------------------------------------
+def find_patient_by_id(ic_no: str) -> Patient | None:
+    """
+    Check before registering
+    """ 
+    return Patient.objects.filter(ic_no=normalize_ic(ic_no)).first()
+
+def prefill_from_ic(ic_no: str) -> dict:
+    """
+    Auto-fill date_of_birth and gender once the nurse type the IC
+    """
+    ic_no = normalize_ic(ic_no)
+    if not IC_PATTERN.match(ic_no): 
+        return {}
+    return {"date_of_birth": bday_from_ic(ic_no), "gender": gender_from_ic(ic_no)}

@@ -20,8 +20,6 @@ class Bill(models.Model):
     consultation = models.OneToOneField(
         "consultation.Consultation", on_delete=models.PROTECT, related_name="bill"
     )
-    discount = models.DecimalField(max_digits=8, decimal_places=2, default=Decimal("0"))
-    tax_rate = models.DecimalField(max_digits=4, decimal_places=2, default=Decimal("0"))
     status = models.CharField(max_length=6, choices=Status.choices, default=Status.UNPAID)
     payment_method = models.CharField(
         max_length=10, choices=PaymentMethod.choices, null=True, blank=True
@@ -45,7 +43,6 @@ class Bill(models.Model):
                 | models.Q(payment_method__in=["CASH", "CARD", "EWALLET"]),
                 name="bill_payment_method_valid",
             ),
-            models.CheckConstraint(condition=models.Q(discount__gte=0), name="bill_discount_non_negative"),
             models.CheckConstraint(
                 condition=models.Q(amount_paid__isnull=True) | models.Q(amount_paid__gte=0),
                 name="bill_amount_paid_non_negative",
@@ -55,18 +52,10 @@ class Bill(models.Model):
     def __str__(self):
         return self.bill_no
 
-    # Totals are calculated from the items, not stored.
-    @property
-    def subtotal(self):
-        return sum((item.line_total for item in self.items.all()), Decimal("0"))
-
-    @property
-    def tax_amount(self):
-        return ((self.subtotal - self.discount) * self.tax_rate / 100).quantize(Decimal("0.01"))
-
+    # The total is calculated from the items, not stored.
     @property
     def total(self):
-        return self.subtotal - self.discount + self.tax_amount
+        return sum((item.line_total for item in self.items.all()), Decimal("0"))
 
     @property
     def change_due(self):

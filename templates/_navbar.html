@@ -3,13 +3,13 @@
   <div class="container-xl">
     <a class="cmq-wordmark" href="{% url 'home' %}">ClinicMQ</a>
 
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#cmqNav"
-            aria-controls="cmqNav" aria-expanded="false" aria-label="Toggle navigation">
-      <i class="bi bi-list"></i>
-    </button>
+    {% if user.is_authenticated %}
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#cmqNav"
+              aria-controls="cmqNav" aria-expanded="false" aria-label="Toggle navigation">
+        <i class="bi bi-list"></i>
+      </button>
 
-    <div class="collapse navbar-collapse" id="cmqNav">
-      {% if user.is_authenticated %}
+      <div class="collapse navbar-collapse" id="cmqNav">
         {# Role menus (UI.md §4) are added here as each module's pages are built. #}
         <ul class="navbar-nav mx-auto gap-lg-3">
           <li class="nav-item">
@@ -34,24 +34,8 @@
             </li>
           </ul>
         </div>
-      {% else %}
-        <ul class="navbar-nav ms-auto gap-lg-3 align-items-lg-center">
-          <li class="nav-item">
-            <a class="nav-link {% if url_name == 'login' %}active{% endif %}" href="{% url 'login' %}">
-              <i class="bi bi-box-arrow-in-right"></i> Log in
-            </a>
-          </li>
-          {% url 'register' as register_url %}
-          {% if register_url %}
-            <li class="nav-item">
-              <a class="nav-link {% if url_name == 'register' %}active{% endif %}" href="{{ register_url }}">
-                <i class="bi bi-person-plus"></i> Register
-              </a>
-            </li>
-          {% endif %}
-        </ul>
-      {% endif %}
-    </div>
+      </div>
+    {% endif %}
   </div>
 </nav>
 {% endwith %}

@@ -16,6 +16,8 @@ from django.utils import timezone
 
 from .models import Patient
 
+User = get_user_model()
+
 # ------------------------------------------------
 # Validation Rules
 # ------------------------------------------------
@@ -297,3 +299,102 @@ def update_patient(*, updated_by, patient_id: int, **changes) -> Patient:
     except IntegrityError:
         raise ValidationError({"ic_no": "A patient with this IC is already registered."})
     return patient
+
+# ---------------------------------------------------------------------------
+# Link an existing walk-in record to a login account
+# ---------------------------------------------------------------------------
+@transaction.atomic
+def link_patient_to_user(*, user, ic_no: str, date_of_birth) -> Patient:
+    """
+    Connect a walk-in Patient (user = NULL) to a PATIENT account.
+    The date of birth must match, so nobody can claim a record with only an IC.
+    """
+    if user.role != "PATIENT":
+        raise PermissionDenied("Only patient accounts can be linked to a patient record.")
+    if Patient.objects.filter(user=user).exists():
+        raise ValidationError("This account is already linked to a patient record.")
+
+    ic_no = normalize_ic(ic_no)
+    patient = Patient.objects.select_for_update().filter(ic_no=ic_no).first()
+    if patient is None or patient.date_of_birth != date_of_birth:
+        # same message for both cases: don't reveal whether an IC exists
+        raise ValidationError({"ic_no": "No matching patient record found. Check IC and date of birth."})
+    if patient.user_id is not None:
+        raise ValidationError({"ic_no": "This patient record already has an online account."})
+
+    patient.user = user
+    patient.save(update_fields=["user"])
+    return patient
+
+# ---------------------------------------------------------------------------
+# Patient signs up online (User + Patient in one transaction)
+# ---------------------------------------------------------------------------
+@transaction.atomic
+def register_patient_account(*, username, email, password, ic_no, full_name,
+                             gender, date_of_birth, phone, address=None):
+    """
+    Create a PATIENT login account and its Patient record.
+
+    - New IC            -> create User + new Patient
+    - IC of a walk-in   -> create User + link the existing Patient (DOB must match)
+    - IC already linked -> error
+
+    Returns (user, patient). If anything fails, nothing is saved.
+    """
+    username = (username or "").strip()
+    email = (email or "").strip().lower()
+    ic_no = normalize_ic(ic_no)
+    errors = {}
+
+    # Account checks
+    if not username:
+        errors["username"] = "Username is required."
+    elif User.objects.filter(username__iexact=username).exists():
+        errors["username"] = "This username is taken."
+    if not email:
+        errors["email"] = "Email is required."
+    elif User.objects.filter(email__iexact=email).exists():
+        errors["email"] = "An account with this email already exists."
+    try:
+        validate_password(password)
+    except ValidationError as e:
+        errors["password"] = e.messages
+
+    existing = Patient.objects.select_for_update().filter(ic_no=ic_no).first()
+    if existing and existing.user_id is not None:
+        errors["ic_no"] = "This IC already has an online account. Please log in instead."
+
+    if errors:
+        raise ValidationError(errors)
+
+    # New patient: validate all patient fields BEFORE creating the user
+    if existing is None:
+        validate_patient_data(
+            ic_no=ic_no, full_name=normalize_name(full_name),
+            gender=(gender or "").strip().upper(), date_of_birth=date_of_birth,
+            phone=normalize_phone(phone), email=email,
+        )
+
+    user = User.objects.create_user(
+        username=username, email=email, password=password, role="PATIENT",
+    )
+
+    if existing is not None:
+        # Returning walk-in patient: link instead of creating a duplicate
+        patient = link_patient_to_user(user=user, ic_no=ic_no, date_of_birth=date_of_birth)
+    else:
+        try:
+            patient = Patient.objects.create(
+                ic_no=ic_no,
+                full_name=normalize_name(full_name),
+                gender=(gender or "").strip().upper(),
+                date_of_birth=date_of_birth,
+                phone=normalize_phone(phone),
+                email=email,
+                address=(address or "").strip() or None,
+                user=user,
+            )
+        except IntegrityError:
+            raise ValidationError({"ic_no": "A patient with this IC is already registered."})
+
+    return user, patient

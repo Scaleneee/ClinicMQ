@@ -218,3 +218,37 @@ def my_bills(request):
         "patient": patient,
         "bills": bs.with_totals(bs.bills_for_patient(request.user)) if patient else [],
     })
+
+
+# ---------------------------------------------------------------------------
+# Daily sales summary (admin)
+# ---------------------------------------------------------------------------
+@role_required("ADMIN")
+def sales_summary(request):
+    from django.utils import timezone
+
+    today = timezone.localdate()
+    end = _parse_date(request.GET.get("end")) or today
+    start = _parse_date(request.GET.get("start")) or end - dt.timedelta(days=6)
+    error, summary = None, None
+    try:
+        summary = bs.sales_summary(viewed_by=request.user, start=start, end=end)
+    except ValidationError as e:
+        error = _error_text(e)
+
+    def preset(label, s, e):
+        return {"label": label, "start": s, "end": e, "active": (s, e) == (start, end)}
+
+    return render(request, "billing/sales_summary.html", {
+        "start": start,
+        "end": end,
+        "error": error,
+        "s": summary,
+        "days": list(reversed(summary["days"])) if summary else [],
+        "presets": [
+            preset("Today", today, today),
+            preset("Last 7 days", today - dt.timedelta(days=6), today),
+            preset("This month", today.replace(day=1), today),
+            preset("Last 30 days", today - dt.timedelta(days=29), today),
+        ],
+    })

@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% load bill_tags %}
+
+{% block title %}Sales summary · ClinicMQ{% endblock %}
+
+{% block content %}
+  <div class="cmq-page-header">
+    <div>
+      <p class="cmq-eyebrow">{% now "l, j F Y" %}</p>
+      <h1 class="cmq-title">Sales summary</h1>
+      <p class="cmq-subtitle">Paid bills from {{ start|date:"j M Y" }} to {{ end|date:"j M Y" }}, by payment date.</p>
+    </div>
+    <div class="cmq-page-actions">
+      <a class="btn btn-secondary" href="{% url 'billing:bill_list' %}"><i class="bi bi-receipt"></i> Billing</a>
+    </div>
+  </div>
+
+  <form method="get" class="d-flex flex-wrap align-items-end gap-2 mb-3">
+    <div class="cmq-field mb-0"><label for="sales-start">From</label>
+      <input type="date" id="sales-start" name="start" value="{{ start|date:'Y-m-d' }}"></div>
+    <div class="cmq-field mb-0"><label for="sales-end">To</label>
+      <input type="date" id="sales-end" name="end" value="{{ end|date:'Y-m-d' }}"></div>
+    <button type="submit" class="btn btn-secondary"><i class="bi bi-arrow-repeat"></i> Show</button>
+  </form>
+  <nav class="cmq-pills" aria-label="Quick ranges">
+    {% for p in presets %}
+      <a class="cmq-pill {% if p.active %}active{% endif %}" href="?start={{ p.start|date:'Y-m-d' }}&end={{ p.end|date:'Y-m-d' }}"
+         {% if p.active %}aria-current="page"{% endif %}>{{ p.label }}</a>
+    {% endfor %}
+  </nav>
+
+  {% if error %}
+    <div class="cmq-alert cmq-alert-error" role="alert"><i class="bi bi-exclamation-circle"></i><div class="cmq-alert-body">{{ error }}</div></div>
+  {% else %}
+    <div class="cmq-stat-grid">
+      {% include "_stat_card.html" with label="Revenue" value=s.revenue|rm note="from paid bills" icon="cash-stack" %}
+      {% include "_stat_card.html" with label="Bills paid" value=s.paid_count note="in this range" icon="receipt" %}
+      {% if s.average is not None %}
+        {% include "_stat_card.html" with label="Avg. bill" value=s.average|rm note="per paid bill" icon="calculator" %}
+      {% else %}
+        {% include "_stat_card.html" with label="Avg. bill" value="–" note="no paid bills" icon="calculator" %}
+      {% endif %}
+      {% include "_stat_card.html" with label="Voided" value=s.void_count note="bills made in this range" icon="x-circle" name="billing:bill_list" query="?status=void" %}
+    </div>
+
+    <div class="row g-4">
+      <div class="col-lg-7">
+        <section class="cmq-card cmq-card-flush">
+          <div class="cmq-card-head"><h2 class="cmq-section-title mb-0">By day</h2></div>
+          <div style="overflow-x:auto;max-height:520px">
+            <table class="cmq-table">
+              <thead><tr><th>Date</th><th class="text-end">Bills paid</th><th class="text-end">Revenue</th></tr></thead>
+              <tbody>
+                {% for d in days %}
+                  <tr class="{% if not d.bills %}is-inactive{% endif %}">
+                    <td>{{ d.date|date:"D, j M Y" }}</td>
+                    <td class="text-end">{{ d.bills }}</td>
+                    <td class="text-end text-nowrap">{{ d.revenue|rm }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+      <div class="col-lg-5">
+        <section class="cmq-card mb-4">
+          <h2 class="cmq-section-title">Payment methods</h2>
+          {% for m in s.by_method %}
+            <div class="cmq-method-row">
+              <div class="d-flex justify-content-between"><span>{{ m.method }} <span class="cmq-muted">· {{ m.bills }} bill{{ m.bills|pluralize }}</span></span><span>{{ m.revenue|rm }}</span></div>
+              <div class="cmq-bar" role="img" aria-label="{{ m.share }}% of revenue"><span style="width:{{ m.share }}%"></span></div>
+            </div>
+          {% empty %}
+            <p class="cmq-muted mb-0">No payments in this range.</p>
+          {% endfor %}
+        </section>
+
+        <section class="cmq-card cmq-card-flush">
+          <div class="cmq-card-head"><h2 class="cmq-section-title mb-0">Top medicines sold</h2></div>
+          <table class="cmq-table">
+            <thead><tr><th>Medicine</th><th class="text-end">Qty</th><th class="text-end">Revenue</th></tr></thead>
+            <tbody>
+              {% for m in s.top_medicines %}
+                <tr><td>{{ m.description }}</td><td class="text-end">{{ m.sold }}</td><td class="text-end text-nowrap">{{ m.revenue|rm }}</td></tr>
+              {% empty %}
+                <tr><td colspan="3" class="cmq-empty-row"><i class="bi bi-capsule"></i>No medicines sold in this range.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </section>
+      </div>
+    </div>
+  {% endif %}
+{% endblock %}

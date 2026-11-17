@@ -773,3 +773,7 @@ a.cmq-tag-mc:hover { border-color: var(--cmq-ink); color: var(--cmq-ink); }
 .cmq-bill-card:hover { background: var(--cmq-wash); color: var(--cmq-ink); }
 .cmq-bill-card-total { display: block; font-size: 24px; font-weight: 400; margin: 2px 0; }
 .cmq-bill-card-link { color: var(--cmq-muted); font-size: 15px; }
+.cmq-method-row { padding: 8px 0; }
+.cmq-method-row + .cmq-method-row { border-top: 1px solid var(--cmq-line); }
+.cmq-bar { height: 6px; margin-top: 6px; border-radius: 999px; background: var(--cmq-line); overflow: hidden; }
+.cmq-bar span { display: block; height: 100%; background: var(--cmq-ink); }

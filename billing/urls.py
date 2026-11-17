@@ -12,4 +12,5 @@ urlpatterns = [
     path("<int:pk>/void/", views.bill_void, name="bill_void"),
     path("<int:pk>/receipt.pdf", views.receipt_pdf, name="receipt_pdf"),
     path("mine/", views.my_bills, name="my_bills"),
+    path("sales/", views.sales_summary, name="sales_summary"),
 ]

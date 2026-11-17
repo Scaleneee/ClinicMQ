@@ -331,3 +331,19 @@ class MyBillsPageTests(BillingTestCase):
         self.assertContains(self.client.get("/billing/mine/"), "isn't linked to a patient record")
         self.client.force_login(self.nurse.user)
         self.assertEqual(self.client.get("/billing/mine/").status_code, 403)
+
+
+class SalesSummaryPageTests(BillingTestCase):
+    def test_admin_sees_summary(self):
+        bill = self.bill(items=[(self.para, 20)])
+        bs.record_payment(recorded_by=self.nurse.user, bill_id=bill.pk, method="CARD")
+        self.client.force_login(self.admin.user)
+        page = self.client.get("/billing/sales/")
+        for text in ("Sales summary", "RM 40.00", "Card", "Paracetamol 500mg", "Last 7 days"):
+            self.assertContains(page, text)
+        page = self.client.get("/billing/sales/?start=2026-11-05&end=2026-11-01")
+        self.assertContains(page, "The start date must be on or before the end date.")
+
+    def test_nurse_cannot_see_summary(self):
+        self.client.force_login(self.nurse.user)
+        self.assertEqual(self.client.get("/billing/sales/").status_code, 403)

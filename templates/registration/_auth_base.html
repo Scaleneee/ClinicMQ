@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% comment %}
+  Shared layout for login, register and the forgot-password pages:
+  a centred card with the wordmark on top and no navbar.
+  Child templates fill: card_class ("is-wide" for 560px), auth_title, auth_sub, auth_body, auth_footer.
+{% endcomment %}
+
+{% block navbar %}{% endblock %}
+
+{% block main %}
+  <div class="cmq-auth">
+    <div class="cmq-auth-card {% block card_class %}{% endblock %}">
+      <div class="cmq-auth-brand"><a class="cmq-wordmark" href="{% url 'home' %}">ClinicMQ</a></div>
+      {% include "_messages.html" %}
+      {% block auth_header %}
+        <h1 class="cmq-auth-title">{% block auth_title %}{% endblock %}</h1>
+        <p class="cmq-auth-sub">{% block auth_sub %}{% endblock %}</p>
+      {% endblock %}
+      {% block auth_body %}{% endblock %}
+      {% block auth_footer_wrap %}
+        <div class="cmq-auth-footer">{% block auth_footer %}{% endblock %}</div>
+      {% endblock %}
+    </div>
+  </div>
+{% endblock %}

@@ -8,6 +8,7 @@ Everyone on the staff can view the staff list and roster; only admins change the
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
 
 from . import services as acc
 from .decorators import role_required
@@ -127,3 +128,22 @@ def staff_edit(request, pk):
         "staff": staff,
         "upcoming": acc.upcoming_shifts(staff),
     })
+
+
+# ---------------------------------------------------------------------------
+# Delete: deactivate / reactivate (admin)
+# ---------------------------------------------------------------------------
+@require_POST
+@role_required("ADMIN")
+def staff_deactivate(request, pk):
+    _run(request, lambda: acc.deactivate_staff(deactivated_by=request.user, staff_id=pk),
+         lambda s: f"{acc.display_name(s)} was deactivated and can no longer log in.")
+    return redirect("staff_list")
+
+
+@require_POST
+@role_required("ADMIN")
+def staff_reactivate(request, pk):
+    _run(request, lambda: acc.reactivate_staff(reactivated_by=request.user, staff_id=pk),
+         lambda s: f"{acc.display_name(s)} was reactivated and can log in again.")
+    return redirect("staff_list")

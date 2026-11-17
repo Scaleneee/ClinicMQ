@@ -238,3 +238,28 @@ class StaffFormScreenTests(StaffTestCase):
         self.client.force_login(nurse.user)
         self.assertEqual(self.client.get(reverse("staff_create")).status_code, 403)
         self.assertEqual(self.client.get(reverse("staff_edit", args=[nurse.pk])).status_code, 403)
+
+
+class DeactivateScreenTests(StaffTestCase):
+    def test_deactivate_and_reactivate_from_list(self):
+        nurse = self.make_staff("Farah Lim", "NURSE")
+        self.client.force_login(self.admin_user)
+        page = self.client.get(reverse("staff_list"))
+        self.assertContains(page, "Deactivate Farah Lim?")
+        self.assertNotContains(page, "Deactivate Kumar?")  # not on your own row
+
+        page = self.client.post(reverse("staff_deactivate", args=[nurse.pk]), follow=True)
+        self.assertContains(page, "Farah Lim was deactivated and can no longer log in.")
+        self.assertContains(page, "Reactivate")
+        page = self.client.post(reverse("staff_reactivate", args=[nurse.pk]), follow=True)
+        self.assertContains(page, "Farah Lim was reactivated")
+
+    def test_cannot_deactivate_self(self):
+        self.client.force_login(self.admin_user)
+        page = self.client.post(reverse("staff_deactivate", args=[self.admin.pk]), follow=True)
+        self.assertContains(page, "can&#x27;t deactivate your own account")
+
+    def test_get_is_not_allowed(self):
+        nurse = self.make_staff("Farah Lim", "NURSE")
+        self.client.force_login(self.admin_user)
+        self.assertEqual(self.client.get(reverse("staff_deactivate", args=[nurse.pk])).status_code, 405)

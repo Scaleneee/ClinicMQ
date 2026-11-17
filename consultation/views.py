@@ -9,8 +9,10 @@ from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
 
 from accounts.decorators import role_required
+from queueing.models import QueueTicket
 
 from . import services as cs
+from .forms import ConsultationForm, rows_from_post
 from .models import Consultation
 
 VIEW_ROLES = ("DOCTOR", "NURSE", "ADMIN")
@@ -83,3 +85,107 @@ def _run(request, action, success=None):
         messages.success(request, success(result) if callable(success) else success)
     return result
 
+
+
+# ---------------------------------------------------------------------------
+# Create / update (doctor)
+# ---------------------------------------------------------------------------
+SERVICE_FIELDS = {"symptoms", "diagnosis", "notes", "consult_fee", "mc_start_date", "mc_days", "mc_reason"}
+
+
+def _show_errors(form, error):
+    """Field errors go under their fields; prescription row errors are returned as a list."""
+    item_errors = []
+    if hasattr(error, "error_dict"):
+        for field, field_messages in error.message_dict.items():
+            if field == "items":
+                item_errors.extend(field_messages)
+            else:
+                for message in field_messages:
+                    form.add_error(field if field in SERVICE_FIELDS else None, message)
+    else:
+        for message in error.messages:
+            form.add_error(None, message)
+    return item_errors
+
+
+def _after_save(request, consultation, warnings, verb):
+    messages.success(request, f"Consultation {verb}.")
+    for w in warnings:
+        messages.warning(request, w)
+    if request.POST.get("next") == "console":
+        return redirect("queueing:console")
+    return redirect("consultation:detail", pk=consultation.pk)
+
+
+def _form_page(request, *, form, ticket, consultation, rows, item_errors, locked_ids=(), billed=False):
+    return render(request, "consultation/consultation_form.html", {
+        "form": form,
+        "ticket": ticket,
+        "patient": ticket.patient,
+        "c": consultation,
+        "rows": rows,
+        "item_errors": item_errors,
+        "locked_ids": set(locked_ids),
+        "billed": billed,
+        "medicines": cs.prescribable_medicines(),
+        "next": request.GET.get("next") or request.POST.get("next") or "",
+    })
+
+
+@role_required("DOCTOR")
+def consultation_create(request, ticket_id):
+    ticket = get_object_or_404(QueueTicket.objects.select_related("patient"), pk=ticket_id)
+    existing = Consultation.objects.filter(ticket=ticket).first()
+    if existing:
+        return redirect("consultation:edit", pk=existing.pk)
+
+    form = ConsultationForm(request.POST or None, initial={"mc_start_date": ticket.queue_date, "mc_days": 1})
+    rows = rows_from_post(request.POST) if request.method == "POST" else []
+    item_errors = []
+    if request.method == "POST" and form.is_valid():
+        try:
+            c, warnings = cs.create_consultation(doctor_user=request.user, ticket_id=ticket.pk, items=rows,
+                                                 mc=form.mc(), **form.fields_for_service())
+        except ValidationError as e:
+            item_errors = _show_errors(form, e)
+        except PermissionDenied as e:
+            messages.error(request, str(e))
+        else:
+            return _after_save(request, c, warnings, "saved")
+    return _form_page(request, form=form, ticket=ticket, consultation=None, rows=rows, item_errors=item_errors)
+
+
+@role_required("DOCTOR")
+def consultation_edit(request, pk):
+    c = get_object_or_404(Consultation.objects.select_related("ticket__patient", "doctor"), pk=pk)
+    if c.doctor.user_id != request.user.id:
+        messages.error(request, "Only the doctor who wrote this consultation can edit it.")
+        return redirect("consultation:detail", pk=c.pk)
+
+    mc = cs.get_mc(c)
+    items = list(c.prescription_items.select_related("medicine"))
+    initial = {"symptoms": c.symptoms, "diagnosis": c.diagnosis, "notes": c.notes, "consult_fee": c.consult_fee,
+               "issue_mc": mc is not None,
+               "mc_start_date": mc.start_date if mc else c.ticket.queue_date,
+               "mc_days": mc.days if mc else 1, "mc_reason": mc.reason if mc else ""}
+    form = ConsultationForm(request.POST or None, initial=initial)
+    billed = cs.is_billed(c)
+    if request.method == "POST":
+        rows = rows_from_post(request.POST)
+    else:
+        rows = [{"medicine": str(i.medicine_id), "dosage": i.dosage, "quantity": str(i.quantity)} for i in items]
+    item_errors = []
+
+    if request.method == "POST" and form.is_valid():
+        try:
+            c, warnings = cs.update_consultation(doctor_user=request.user, consultation_id=c.pk, items=rows,
+                                                 mc=form.mc(), **form.fields_for_service())
+        except ValidationError as e:
+            item_errors = _show_errors(form, e)
+        except PermissionDenied as e:
+            messages.error(request, str(e))
+        else:
+            return _after_save(request, c, warnings, "updated")
+    return _form_page(request, form=form, ticket=c.ticket, consultation=c, rows=rows, item_errors=item_errors,
+                      locked_ids={str(i.medicine_id) for i in items if i.dispensed}, billed=billed)

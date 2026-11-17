@@ -1,0 +1,46 @@
+{% comment %}
+  One prescription row. row = {"medicine", "dosage", "quantity"} or None (blank row).
+  A dispensed medicine (its id in locked_ids) or a billed consultation is shown read-only,
+  with hidden inputs so it's sent back unchanged.
+{% endcomment %}
+{% with med_id=row.medicine|default:"" %}
+{% if billed or med_id and med_id in locked_ids %}
+  <tr class="cmq-rx-row is-locked">
+    <td>
+      {% for m in medicines %}{% if m.pk|stringformat:"s" == med_id %}
+        <span data-price="{{ m.unit_price }}">{{ m.name }}</span>
+      {% endif %}{% endfor %}
+      <input type="hidden" name="medicine" value="{{ med_id }}">
+      <span class="cmq-badge cmq-badge-checked-in ms-1"><span class="cmq-badge-dot"></span>{% if billed %}Billed{% else %}Dispensed{% endif %}</span>
+    </td>
+    <td>{{ row.dosage }}<input type="hidden" name="dosage" value="{{ row.dosage }}"></td>
+    <td>{{ row.quantity }}<input type="hidden" name="quantity" value="{{ row.quantity }}" class="rx-qty"></td>
+    <td class="text-end rx-price">–</td>
+    <td class="text-end rx-amount">–</td>
+    <td></td>
+  </tr>
+{% else %}
+  <tr class="cmq-rx-row">
+    <td>
+      <div class="cmq-field mb-0">
+        <select name="medicine" class="rx-med" aria-label="Medicine">
+          <option value="">Select medicine</option>
+          {% for m in medicines %}
+            <option value="{{ m.pk }}" data-price="{{ m.unit_price }}" data-stock="{{ m.quantity }}" data-unit="{{ m.unit }}"
+                    {% if m.problem and m.pk|stringformat:"s" != med_id %}disabled{% endif %}
+                    {% if m.pk|stringformat:"s" == med_id %}selected{% endif %}>
+              {{ m.name }}{% if m.problem %} ({{ m.problem }}){% else %} · {{ m.quantity }} {{ m.unit }}{% endif %}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="cmq-hint rx-stock-warning text-warning-emphasis" hidden></div>
+    </td>
+    <td><div class="cmq-field mb-0"><input type="text" name="dosage" value="{{ row.dosage|default:'' }}" placeholder="e.g. 2 tabs, 3 times a day" aria-label="Dosage"></div></td>
+    <td><div class="cmq-field mb-0"><input type="number" name="quantity" value="{{ row.quantity|default:'' }}" min="1" step="1" class="rx-qty" aria-label="Quantity"></div></td>
+    <td class="text-end rx-price">–</td>
+    <td class="text-end rx-amount">–</td>
+    <td class="text-end"><button type="button" class="btn btn-sm btn-quiet-danger rx-remove" aria-label="Remove medicine"><i class="bi bi-x-lg"></i></button></td>
+  </tr>
+{% endif %}
+{% endwith %}

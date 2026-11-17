@@ -211,3 +211,67 @@ class ListDetailScreenTests(ConsultationTestCase):
         u = User.objects.create_user(username="p@x.my", email="p@x.my", password="x", role="PATIENT")
         self.client.force_login(u)
         self.assertEqual(self.client.get(reverse("consultation:list")).status_code, 403)
+
+
+class FormScreenTests(ConsultationTestCase):
+    def post(self, url, **extra):
+        data = {"symptoms": "Fever, cough", "diagnosis": "Viral fever", "notes": "", "consult_fee": "30.00",
+                "medicine": [str(self.para.pk), ""], "dosage": ["2 tabs 3x a day", ""], "quantity": ["20", ""]}
+        data.update(extra)
+        return self.client.post(url, data, follow=True)
+
+    def test_write_notes_from_console_and_back(self):
+        self.client.force_login(self.doc.user)
+        console = self.client.get(reverse("queueing:console"))
+        url = reverse("consultation:create", args=[self.ticket.pk])
+        self.assertContains(console, url + "?next=console")                  # "Write notes" now works
+        form = self.client.get(url + "?next=console")
+        self.assertContains(form, "Siti Nurhaliza")                          # patient strip
+        self.assertContains(form, "Amoxicillin 250mg (out of stock)")       # disabled option
+        page = self.post(url, next="console", issue_mc="on", mc_start_date="2026-11-04", mc_days="2",
+                         mc_reason="Viral fever")
+        self.assertRedirects(page, reverse("queueing:console"))
+        self.assertContains(page, "Consultation saved.")
+        self.assertContains(page, "Edit notes")
+        c = Consultation.objects.get()
+        self.assertEqual((c.prescription_items.count(), c.medical_certificate.days), (1, 2))
+
+    def test_errors_and_stock_warning(self):
+        self.client.force_login(self.doc.user)
+        url = reverse("consultation:create", args=[self.ticket.pk])
+        page = self.post(url, diagnosis="")
+        self.assertContains(page, "Please fix the fields marked in red.")
+        self.assertContains(page, "This field is required.")                # diagnosis
+        page = self.post(url, issue_mc="on", mc_days="", mc_reason="")
+        self.assertContains(page, "Enter the reason for the MC.")
+        self.assertFalse(Consultation.objects.exists())
+        page = self.post(url, medicine=[str(self.syrup.pk)], dosage=["10ml"], quantity=["5"])
+        self.assertContains(page, "Only 2 bottles of Cough syrup 100ml in stock")
+        self.assertEqual(Consultation.objects.count(), 1)
+
+    def test_service_row_errors_shown(self):
+        self.client.force_login(self.doc.user)
+        url = reverse("consultation:create", args=[self.ticket.pk])
+        page = self.post(url, medicine=[str(self.para.pk)], dosage=[""], quantity=["0"])
+        self.assertContains(page, "Row 1: enter the dosage for Paracetamol 500mg.")
+        self.assertContains(page, "Row 1: quantity for Paracetamol 500mg must be more than 0.")
+
+    def test_edit_by_author_only_and_billed_locks(self):
+        c, _ = self.create()
+        self.client.force_login(self.doc2.user)
+        page = self.client.get(reverse("consultation:edit", args=[c.pk]), follow=True)
+        self.assertContains(page, "Only the doctor who wrote this consultation can edit it.")
+
+        Bill.objects.create(bill_no="B-1", consultation=c, created_by=self.nurse)
+        self.client.force_login(self.doc.user)
+        page = self.client.get(reverse("consultation:edit", args=[c.pk]))
+        self.assertContains(page, "locked, already billed")
+        page = self.post(reverse("consultation:edit", args=[c.pk]), diagnosis="Influenza", consult_fee="99",
+                         medicine=[str(self.para.pk)], dosage=["2 tabs 3x a day"], quantity=["20"])
+        self.assertContains(page, "Consultation updated.")
+        c.refresh_from_db()
+        self.assertEqual((c.diagnosis, c.consult_fee), ("Influenza", Decimal("30.00")))
+
+    def test_nurse_cannot_write(self):
+        self.client.force_login(self.nurse.user)
+        self.assertEqual(self.client.get(reverse("consultation:create", args=[self.ticket.pk])).status_code, 403)

@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% load static queue_tags %}
+
+{% block title %}{% if c %}Edit consultation{% else %}New consultation{% endif %} · ClinicMQ{% endblock %}
+
+{% block content %}
+<div class="cmq-consult-page">
+  <p class="cmq-eyebrow">
+    <a href="{% if next == 'console' %}{% url 'queueing:console' %}{% elif c %}{% url 'consultation:detail' c.pk %}{% else %}{% url 'consultation:list' %}{% endif %}"><i class="bi bi-arrow-left"></i> Back</a>
+  </p>
+  <h1 class="cmq-title">{% if c %}Edit consultation{% else %}New consultation{% endif %}</h1>
+
+  {# Patient strip #}
+  <div class="cmq-patient-strip">
+    <div class="cmq-ticket-no mb-0" style="font-size:36px">{{ ticket.queue_no|queue_no }}</div>
+    <div class="flex-fill">
+      <strong>{{ patient.full_name|title }}</strong>
+      <div class="cmq-muted">{{ patient.date_of_birth|age }} yrs · {{ patient.get_gender_display }} · {{ patient.ic_no }}</div>
+    </div>
+    {% status_badge ticket.status %}
+  </div>
+
+  {% if form.errors or item_errors %}
+    <div class="cmq-alert cmq-alert-error" role="alert">
+      <i class="bi bi-exclamation-circle"></i>
+      <div class="cmq-alert-body">
+        {% for error in form.non_field_errors %}{{ error }} {% endfor %}
+        {% if item_errors %}
+          <ul class="mb-0 ps-3">{% for e in item_errors %}<li>{{ e }}</li>{% endfor %}</ul>
+        {% elif not form.non_field_errors %}Please fix the fields marked in red.{% endif %}
+      </div>
+    </div>
+  {% endif %}
+
+  <form method="post" novalidate id="consult-form">
+    {% csrf_token %}
+    {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+
+    {# Section 1: notes and fee #}
+    <section class="cmq-card mb-4">
+      <h2 class="cmq-section-title">1 · Notes</h2>
+      {% include "_field.html" with field=form.symptoms %}
+      {% include "_field.html" with field=form.diagnosis %}
+      {% include "_field.html" with field=form.notes optional=True %}
+      {% if billed %}
+        <div class="cmq-field"><span class="cmq-label">Consult fee (RM)</span>
+          <p class="mb-0">RM {{ c.consult_fee|floatformat:2 }} <span class="cmq-hint">· locked, already billed</span></p>
+          <input type="hidden" name="consult_fee" value="{{ c.consult_fee }}" id="id_consult_fee">
+        </div>
+      {% else %}
+        <div style="max-width:220px">{% include "_field.html" with field=form.consult_fee %}</div>
+      {% endif %}
+    </section>
+
+    {# Section 2: prescription #}
+    <section class="cmq-card cmq-card-flush mb-4">
+      <div class="cmq-card-head">
+        <h2 class="cmq-section-title mb-0">2 · Prescription</h2>
+        {% if billed %}<span class="cmq-hint mt-0">Locked, already billed</span>{% endif %}
+      </div>
+      <div style="overflow-x:auto">
+        <table class="cmq-table cmq-rx" id="rx-table" data-billed="{{ billed|yesno:'1,0' }}">
+          <thead>
+            <tr><th style="width:34%">Medicine</th><th>Dosage</th><th style="width:90px">Qty</th>
+                <th class="text-end">Unit price</th><th class="text-end">Amount</th><th style="width:44px"></th></tr>
+          </thead>
+          <tbody id="rx-rows">
+            {% for row in rows %}
+              {% include "consultation/_rx_row.html" with row=row %}
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="cmq-rx-foot">
+        {% if not billed %}
+          <button type="button" class="btn btn-link p-0" id="rx-add"><i class="bi bi-plus-lg"></i> Add medicine</button>
+        {% else %}<span></span>{% endif %}
+        <span>Medicines: <strong id="rx-subtotal">RM 0.00</strong></span>
+      </div>
+      <p class="cmq-hint px-3 pb-3 mb-0" id="rx-empty" {% if rows %}hidden{% endif %}>No medicines yet.</p>
+    </section>
+
+    {# Section 3: medical certificate #}
+    <section class="cmq-card mb-4">
+      <h2 class="cmq-section-title">3 · Medical certificate</h2>
+      <label class="cmq-check mb-3">{{ form.issue_mc }} {{ form.issue_mc.label }}</label>
+      <div id="mc-fields" class="row g-3">
+        <div class="col-6 col-md-4">{% include "_field.html" with field=form.mc_start_date %}</div>
+        <div class="col-6 col-md-3">{% include "_field.html" with field=form.mc_days %}</div>
+        <div class="col-md-5">{% include "_field.html" with field=form.mc_reason %}</div>
+      </div>
+    </section>
+
+    {# Sticky bottom bar #}
+    <div class="cmq-sticky-bar">
+      <div><span class="cmq-muted">Total</span> <strong id="grand-total">RM 0.00</strong></div>
+      <button type="submit" class="btn btn-primary btn-lg"><i class="bi bi-check2"></i> Save</button>
+    </div>
+  </form>
+
+  {# Template for a new prescription row #}
+  <template id="rx-row-template">
+    {% include "consultation/_rx_row.html" with row=None %}
+  </template>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/consultation_form.js' %}"></script>
+{% endblock %}

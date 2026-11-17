@@ -730,3 +730,19 @@ a.cmq-stat-card:hover { background: var(--cmq-wash); color: var(--cmq-ink); bord
 .cmq-prewrap { white-space: pre-line; }
 .cmq-money-row { display: flex; justify-content: space-between; padding: 6px 0; }
 .cmq-money-row.is-total { border-top: 1px solid var(--cmq-line); margin-top: 4px; padding-top: 10px; font-weight: 700; font-size: 19px; }
+.cmq-consult-page { max-width: 960px; margin: 0 auto; padding-bottom: 24px; }
+.cmq-patient-strip {
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  padding: 14px 18px; margin: 8px 0 24px; border: 1px solid var(--cmq-line);
+  border-radius: var(--cmq-radius); background: var(--cmq-wash);
+}
+.cmq-rx td { vertical-align: top; }
+.cmq-rx .cmq-field input, .cmq-rx .cmq-field select { min-height: 40px; font-size: 16px; }
+.cmq-rx tr.is-locked td { color: var(--cmq-ink-soft); }
+.cmq-rx-foot { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-top: 1px solid var(--cmq-line); }
+.cmq-sticky-bar {
+  position: sticky; bottom: 0; z-index: 5;
+  display: flex; justify-content: space-between; align-items: center; gap: 16px;
+  padding: 12px 16px; margin: 0 -16px; border-top: 1px solid var(--cmq-line); background: var(--cmq-paper);
+}
+.cmq-sticky-bar strong { font-size: 24px; font-weight: 400; margin-left: 6px; }

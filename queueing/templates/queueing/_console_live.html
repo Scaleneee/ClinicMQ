@@ -50,8 +50,12 @@
           {% elif serving.status == "IN_CONSULTATION" %}
             <p class="cmq-hint mb-3">Started at {{ serving.started_at|time:"g:i A" }}.</p>
             <div class="d-flex flex-wrap gap-2 justify-content-center">
-              {# Consultation module: switches on when consultation:create exists #}
-              <div>{% include "_action_link.html" with name="consultation:create" label="Write notes" icon="pencil-square" css="btn btn-secondary btn-lg" %}</div>
+              {# Consultation module: write (or edit) the notes for this visit, then come back here #}
+              {% if serving.consultation %}
+                <a class="btn btn-secondary btn-lg" href="{% url 'consultation:edit' serving.consultation.pk %}?next=console"><i class="bi bi-pencil-square"></i> Edit notes</a>
+              {% else %}
+                <a class="btn btn-secondary btn-lg" href="{% url 'consultation:create' serving.pk %}?next=console"><i class="bi bi-pencil-square"></i> Write notes</a>
+              {% endif %}
               <form method="post" action="{% url 'queueing:console_action' 'complete' %}">
                 {% csrf_token %}<input type="hidden" name="ticket" value="{{ serving.pk }}">
                 <button type="submit" class="btn btn-success btn-lg"><i class="bi bi-check2-circle"></i> Complete</button>

@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}{% if staff %}Edit staff{% else %}Add staff{% endif %} · ClinicMQ{% endblock %}
+
+{% block content %}
+<div class="cmq-form-page">
+  <div class="cmq-page-header mb-4">
+    <div>
+      <p class="cmq-eyebrow"><a href="{% url 'staff_list' %}"><i class="bi bi-arrow-left"></i> Back</a></p>
+      <h1 class="cmq-title">{% if staff %}Edit staff{% else %}Add staff{% endif %}</h1>
+      <p class="cmq-subtitle">
+        {% if staff %}Update details or role. The login email changes with it.{% else %}Create a login for a doctor, nurse or admin.{% endif %}
+      </p>
+    </div>
+  </div>
+
+  {% if form.errors %}
+    <div class="cmq-alert cmq-alert-error" role="alert">
+      <i class="bi bi-exclamation-circle"></i>
+      <div class="cmq-alert-body">
+        {% for error in form.non_field_errors %}{{ error }} {% empty %}Please fix the fields marked in red.{% endfor %}
+      </div>
+    </div>
+  {% endif %}
+
+  <form method="post" novalidate class="cmq-card">
+    {% csrf_token %}
+    <div class="row g-3">
+      <div class="col-md-6">{% include "_field.html" with field=form.full_name %}</div>
+      <div class="col-md-6">{% include "_field.html" with field=form.email %}</div>
+      <div class="col-6">{% include "_field.html" with field=form.role %}</div>
+      <div class="col-6">{% include "_field.html" with field=form.phone %}</div>
+      <div class="col-12" id="specialty-field">{% include "_field.html" with field=form.specialty optional=True %}</div>
+      {% if form.password1 %}
+        <div class="col-md-6">{% include "_field.html" with field=form.password1 %}</div>
+        <div class="col-md-6">{% include "_field.html" with field=form.password2 %}</div>
+      {% endif %}
+    </div>
+    <div class="d-flex gap-2 justify-content-end">
+      <a class="btn btn-secondary" href="{% url 'staff_list' %}">Cancel</a>
+      <button type="submit" class="btn btn-primary"><i class="bi bi-check2"></i> Save</button>
+    </div>
+  </form>
+
+  {% if staff %}
+    <section class="cmq-card mt-4">
+      <h2 class="cmq-section-title">Upcoming shifts</h2>
+      {% for shift in upcoming %}
+        <div class="d-flex justify-content-between py-2 {% if not forloop.last %}border-bottom{% endif %}">
+          <span>{{ shift.shift_date|date:"D, j M Y" }}</span><span class="cmq-muted">{{ shift.get_session_display }}</span>
+        </div>
+      {% empty %}
+        <p class="cmq-muted mb-0">No upcoming shifts.</p>
+      {% endfor %}
+    </section>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Specialty is only for doctors.
+  (function () {
+    var role = document.getElementById("id_role");
+    var field = document.getElementById("specialty-field");
+    function sync() { field.hidden = role.value !== "DOCTOR"; }
+    role.addEventListener("change", sync);
+    sync();
+  })();
+</script>
+{% endblock %}

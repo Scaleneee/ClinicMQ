@@ -7,11 +7,12 @@ Everyone on the staff can view the staff list and roster; only admins change the
 
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied, ValidationError
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, redirect, render
 
 from . import services as acc
 from .decorators import role_required
 from .models import Staff
+from .staff_forms import StaffForm
 
 STAFF_ROLES = ("NURSE", "DOCTOR", "ADMIN")
 
@@ -23,10 +24,15 @@ ROLE_FILTERS = [
 ]
 
 
-def _add_service_errors(form, error):
-    """Show a ValidationError from a service under the matching form fields."""
+def _add_service_errors(form, error, field_map=None):
+    """Show a ValidationError from a service under the matching form fields.
+
+    field_map renames service keys to form fields, e.g. {"password": "password1"}.
+    """
+    field_map = field_map or {}
     if hasattr(error, "error_dict"):
         for field, field_messages in error.message_dict.items():
+            field = field_map.get(field, field)
             target = field if field in form.fields else None
             for message in field_messages:
                 form.add_error(target, message)
@@ -74,4 +80,50 @@ def staff_list(request):
         "role_key": key,
         "query": query,
         "is_admin": request.user.role == "ADMIN",
+    })
+
+
+# ---------------------------------------------------------------------------
+# Create / update staff (admin)
+# ---------------------------------------------------------------------------
+@role_required("ADMIN")
+def staff_create(request):
+    form = StaffForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        data = form.cleaned_data
+        try:
+            staff = acc.create_staff(
+                created_by=request.user, full_name=data["full_name"], email=data["email"], role=data["role"],
+                phone=data["phone"], specialty=data["specialty"], password=data["password1"],
+            )
+        except ValidationError as e:
+            _add_service_errors(form, e, {"password": "password1"})
+        except PermissionDenied as e:
+            messages.error(request, str(e))
+        else:
+            messages.success(request, f"{acc.display_name(staff)} was added. They can log in with {staff.user.email}.")
+            return redirect("staff_list")
+    return render(request, "accounts/staff/staff_form.html", {"form": form, "staff": None})
+
+
+@role_required("ADMIN")
+def staff_edit(request, pk):
+    staff = get_object_or_404(Staff.objects.select_related("user"), pk=pk)
+    initial = {"full_name": staff.full_name, "email": staff.user.email, "role": staff.role,
+               "phone": staff.phone, "specialty": staff.specialty}
+    form = StaffForm(request.POST or None, initial=initial, editing=True)
+    if request.method == "POST" and form.is_valid():
+        try:
+            staff = acc.update_staff(updated_by=request.user, staff_id=staff.pk, **form.cleaned_data)
+        except ValidationError as e:
+            _add_service_errors(form, e)
+        except PermissionDenied as e:
+            messages.error(request, str(e))
+        else:
+            messages.success(request, f"{acc.display_name(staff)}'s details were saved.")
+            return redirect("staff_list")
+    return render(request, "accounts/staff/staff_form.html", {
+        "form": form,
+        "staff": staff,
+        "upcoming": acc.upcoming_shifts(staff),
     })

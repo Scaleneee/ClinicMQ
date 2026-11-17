@@ -197,3 +197,44 @@ class StaffListScreenTests(StaffTestCase):
         patient = User.objects.create_user(username="p@x.my", email="p@x.my", password="x", role="PATIENT")
         self.client.force_login(patient)
         self.assertEqual(self.client.get(reverse("staff_list")).status_code, 403)
+
+
+class StaffFormScreenTests(StaffTestCase):
+    VALID = {"full_name": "Aisyah Rahman", "email": "aisyah@clinic.my", "role": "DOCTOR",
+             "phone": "0123456789", "specialty": "General practice",
+             "password1": "Strong-Pass-123", "password2": "Strong-Pass-123"}
+
+    def test_add_staff_then_they_can_log_in(self):
+        self.client.force_login(self.admin_user)
+        page = self.client.post(reverse("staff_create"), self.VALID, follow=True)
+        self.assertContains(page, "Dr. Aisyah Rahman was added.")
+        self.client.logout()
+        self.assertTrue(self.client.login(username="aisyah@clinic.my", password="Strong-Pass-123"))
+
+    def test_add_shows_errors(self):
+        self.client.force_login(self.admin_user)
+        page = self.client.post(reverse("staff_create"), {**self.VALID, "email": "kumar@clinic.my",
+                                                          "password1": "123", "password2": "123"})
+        self.assertContains(page, "An account with this email already exists.")
+        self.assertContains(page, "too short")
+        page = self.client.post(reverse("staff_create"), {**self.VALID, "password2": "different"})
+        self.assertContains(page, "do not match")
+
+    def test_edit_staff(self):
+        nurse = self.make_staff("Farah Lim", "NURSE")
+        self.client.force_login(self.admin_user)
+        page = self.client.get(reverse("staff_edit", args=[nurse.pk]))
+        self.assertContains(page, "Upcoming shifts")
+        self.assertNotContains(page, "Temporary password")
+        page = self.client.post(reverse("staff_edit", args=[nurse.pk]),
+                                {"full_name": "Farah Lim", "email": "farah@clinic.my", "role": "NURSE",
+                                 "phone": "019-1112222", "specialty": ""}, follow=True)
+        self.assertContains(page, "Farah Lim&#x27;s details were saved.")
+        nurse.refresh_from_db()
+        self.assertEqual((nurse.phone, nurse.user.email), ("019-1112222", "farah@clinic.my"))
+
+    def test_only_admin(self):
+        nurse = self.make_staff("Farah Lim", "NURSE")
+        self.client.force_login(nurse.user)
+        self.assertEqual(self.client.get(reverse("staff_create")).status_code, 403)
+        self.assertEqual(self.client.get(reverse("staff_edit", args=[nurse.pk])).status_code, 403)

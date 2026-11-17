@@ -8,8 +8,16 @@ from .models import Shift, Staff, User
 class ClinicUserAdmin(UserAdmin):
     list_display = ("username", "email", "role", "is_active", "date_joined")
     list_filter = ("role", "is_active")
-    fieldsets = UserAdmin.fieldsets + (("Clinic", {"fields": ("role",)}),)
-    add_fieldsets = UserAdmin.add_fieldsets + (("Clinic", {"fields": ("email", "role")}),)
+    search_fields = ("username", "email")
+    ordering = ("username",)
+    # Django's default has a "Personal info" section with first/last name, which this User doesn't have.
+    fieldsets = (
+        (None, {"fields": ("username", "password")}),
+        ("Account", {"fields": ("email", "role")}),
+        ("Permissions", {"fields": ("is_active", "is_staff", "is_superuser", "groups", "user_permissions")}),
+        ("Important dates", {"fields": ("last_login", "date_joined")}),
+    )
+    add_fieldsets = UserAdmin.add_fieldsets + (("Account", {"fields": ("email", "role")}),)
 
 
 @admin.register(Staff)

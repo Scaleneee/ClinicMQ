@@ -22,7 +22,7 @@
         <div class="dropdown">
           <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
             <i class="bi bi-person-circle"></i>
-            {% firstof user.patient.full_name user.staff.full_name user.get_full_name user.username %}
+            {{ user.get_full_name }}
             <span class="cmq-user-role">[{{ user.get_role_display }}]</span>
           </button>
           <ul class="dropdown-menu dropdown-menu-end">

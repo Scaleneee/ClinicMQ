@@ -1,4 +1,5 @@
 from django.contrib.auth.models import AbstractUser, UserManager
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 
 
@@ -27,6 +28,11 @@ class User(AbstractUser):
         DOCTOR = "DOCTOR", "Doctor"
         ADMIN = "ADMIN", "Admin"
 
+    # Names live on Patient.full_name / Staff.full_name (one field, as on the IC),
+    # so drop Django's built-in first/last name columns.
+    first_name = None
+    last_name = None
+
     email = models.EmailField(unique=True)
     role = models.CharField(max_length=10, choices=Role.choices, default=Role.PATIENT)
 
@@ -40,6 +46,18 @@ class User(AbstractUser):
 
     def __str__(self):
         return f"{self.username} ({self.role})"
+
+    def get_full_name(self):
+        """Full name from the linked Patient or Staff record, else the username."""
+        for related in ("patient", "staff"):
+            try:
+                return getattr(self, related).full_name
+            except ObjectDoesNotExist:
+                continue
+        return self.username
+
+    def get_short_name(self):
+        return self.get_full_name()
 
 
 class Staff(models.Model):

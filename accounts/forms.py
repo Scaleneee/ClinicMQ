@@ -1,9 +1,8 @@
 from django import forms
 from django.contrib.auth.forms import AuthenticationForm
-from django.core.validators import RegexValidator
 from django.utils import timezone
 
-from patients.models import IC_REGEX, PHONE_REGEX
+from patients.services import IC_PATTERN, PHONE_PATTERN, normalize_ic, normalize_phone
 
 
 class LoginForm(AuthenticationForm):
@@ -25,16 +24,15 @@ class LoginForm(AuthenticationForm):
 class RegisterForm(forms.Form):
     """Patient self-registration (UI.md §5.1).
 
-    Checks formats only, so the page can show field errors. Uniqueness and
-    linking to an existing walk-in record are done by
-    patients.services.register_patient_account() when the logic is wired up.
+    Checks formats here so the page can show field errors straight away.
+    Uniqueness, the IC cross-checks and linking to an existing walk-in record
+    are done by patients.services.register_patient_account() in the view.
     """
 
     ic_no = forms.CharField(
         label="IC number",
-        max_length=14,
-        validators=[RegexValidator(IC_REGEX, "Enter the IC number as ######-##-####.")],
-        help_text="Format: 900101-14-5678",
+        max_length=20,
+        help_text="Format: 900101-14-5678 (dashes optional)",
         widget=forms.TextInput(attrs={"placeholder": "900101-14-5678", "inputmode": "numeric", "autofocus": True}),
     )
     full_name = forms.CharField(
@@ -54,9 +52,8 @@ class RegisterForm(forms.Form):
     )
     phone = forms.CharField(
         label="Phone",
-        max_length=15,
-        validators=[RegexValidator(PHONE_REGEX, "Enter the phone number as 01X-XXXXXXX.")],
-        help_text="Format: 012-3456789",
+        max_length=20,
+        help_text="Format: 012-3456789 (dash optional)",
         widget=forms.TextInput(attrs={"placeholder": "012-3456789", "inputmode": "tel", "autocomplete": "tel"}),
     )
     email = forms.EmailField(
@@ -76,6 +73,18 @@ class RegisterForm(forms.Form):
         strip=False,
         widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}),
     )
+
+    def clean_ic_no(self):
+        ic_no = normalize_ic(self.cleaned_data["ic_no"])
+        if not IC_PATTERN.match(ic_no):
+            raise forms.ValidationError("Enter the IC number as ######-##-####.")
+        return ic_no
+
+    def clean_phone(self):
+        phone = normalize_phone(self.cleaned_data["phone"])
+        if not PHONE_PATTERN.match(phone):
+            raise forms.ValidationError("Enter the phone number as 01X-XXXXXXX.")
+        return phone
 
     def clean_date_of_birth(self):
         dob = self.cleaned_data["date_of_birth"]

@@ -252,3 +252,26 @@ class GenerateBillPageTests(BillingTestCase):
         c = self.visit()
         self.client.force_login(self.admin.user)
         self.assertEqual(self.client.post(f"/billing/new/{c.pk}/").status_code, 403)
+
+
+class PaymentPageTests(BillingTestCase):
+    def test_cash_payment_with_change(self):
+        bill = self.bill(items=[(self.para, 20)])
+        self.client.force_login(self.nurse.user)
+        page = self.client.get(f"/billing/{bill.pk}/pay/")
+        for text in ("Total due", "RM 40.00", "Cash", "Card", "E-wallet"):
+            self.assertContains(page, text)
+        page = self.client.post(f"/billing/{bill.pk}/pay/", {"method": "CASH", "amount_received": "30"})
+        self.assertContains(page, "Amount paid is less than the total.")
+        response = self.client.post(f"/billing/{bill.pk}/pay/", {"method": "CASH", "amount_received": "50"})
+        self.assertRedirects(response, f"/billing/{bill.pk}/")
+        page = self.client.get(f"/billing/{bill.pk}/")
+        for text in ("Paid by Cash", "RM 50.00", "Change", "RM 10.00"):
+            self.assertContains(page, text)
+        # Paid bills can't be paid again.
+        self.assertRedirects(self.client.get(f"/billing/{bill.pk}/pay/"), f"/billing/{bill.pk}/")
+
+    def test_method_required(self):
+        bill = self.bill()
+        self.client.force_login(self.nurse.user)
+        self.assertContains(self.client.post(f"/billing/{bill.pk}/pay/", {}), "Choose how the patient paid.")

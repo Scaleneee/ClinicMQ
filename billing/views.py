@@ -17,6 +17,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from accounts.decorators import role_required
 
 from . import services as bs
+from .forms import PaymentForm
 from .models import Bill
 
 STAFF_ROLES = ("NURSE", "ADMIN")
@@ -117,3 +118,41 @@ def bill_create(request, consultation_id):
         "total": sum((line["line_total"] for line in lines), 0),
         "completed": c.ticket.status == "COMPLETED",
     })
+
+
+def _add_service_errors(form, error):
+    if hasattr(error, "error_dict"):
+        for field, field_messages in error.message_dict.items():
+            for message in field_messages:
+                form.add_error(field if field in form.fields else None, message)
+    else:
+        for message in error.messages:
+            form.add_error(None, message)
+
+
+# ---------------------------------------------------------------------------
+# Update: record payment (nurse)
+# ---------------------------------------------------------------------------
+@role_required("NURSE")
+def bill_pay(request, pk):
+    bill = _bill_or_404(pk)
+    if bill.status != Bill.Status.UNPAID:
+        messages.error(request, "This bill is void, so no payment can be recorded."
+                       if bill.status == Bill.Status.VOID else "This bill is already paid.")
+        return redirect("billing:bill_detail", pk=bill.pk)
+
+    form = PaymentForm(request.POST if request.method == "POST" else None,
+                       initial={"method": Bill.PaymentMethod.CASH})
+    if request.method == "POST" and form.is_valid():
+        try:
+            bill = bs.record_payment(recorded_by=request.user, bill_id=bill.pk, **form.cleaned_data)
+        except ValidationError as e:
+            _add_service_errors(form, e)
+        except PermissionDenied as e:
+            messages.error(request, _error_text(e))
+        else:
+            change = bs.change_for(bill)
+            messages.success(request, f"Payment recorded for {bill.bill_no}."
+                             + (f" Change: RM {change:,.2f}." if change else ""))
+            return redirect("billing:bill_detail", pk=bill.pk)
+    return render(request, "billing/bill_pay.html", {"bill": bill, "form": form, "total": bill.total})

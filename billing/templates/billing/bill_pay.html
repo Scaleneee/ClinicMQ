@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% load bill_tags %}
+
+{% block title %}Record payment · ClinicMQ{% endblock %}
+
+{% block content %}
+<div class="cmq-narrow">
+  <p class="cmq-eyebrow"><a href="{% url 'billing:bill_detail' bill.pk %}"><i class="bi bi-arrow-left"></i> Back</a></p>
+  <h1 class="cmq-title">Record payment</h1>
+  <p class="cmq-subtitle mb-4">Bill {{ bill.bill_no }} · {{ bill.consultation.ticket.patient.full_name|title }}</p>
+
+  {% if form.errors %}
+    <div class="cmq-alert cmq-alert-error" role="alert">
+      <i class="bi bi-exclamation-circle"></i>
+      <div class="cmq-alert-body">
+        {% for error in form.non_field_errors %}{{ error }} {% empty %}Please fix the fields marked in red.{% endfor %}
+      </div>
+    </div>
+  {% endif %}
+
+  <form method="post" novalidate class="cmq-card" id="pay-form" data-total="{{ total }}">
+    {% csrf_token %}
+    <div class="cmq-pay-due">
+      <span class="cmq-muted">Total due</span>
+      <strong>{{ total|rm }}</strong>
+    </div>
+
+    <div class="cmq-field{% if form.method.errors %} has-error{% endif %}">
+      <span class="cmq-label d-block mb-2">{{ form.method.label }}</span>
+      <div class="cmq-choice cmq-pay-tiles" role="radiogroup" aria-label="{{ form.method.label }}">
+        {% for radio in form.method %}
+          <label>
+            {{ radio.tag }}
+            <i class="bi {% if radio.data.value == 'CASH' %}bi-cash-stack{% elif radio.data.value == 'CARD' %}bi-credit-card{% else %}bi-phone{% endif %}" aria-hidden="true"></i>
+            <span>{{ radio.choice_label }}</span>
+          </label>
+        {% endfor %}
+      </div>
+      {% if form.method.errors %}<div class="cmq-error">{{ form.method.errors }}</div>{% endif %}
+    </div>
+
+    <div id="cash-fields">
+      {% include "_field.html" with field=form.amount_received %}
+      <div class="cmq-money-row is-total"><span>Change</span><span id="change">RM 0.00</span></div>
+    </div>
+    <p class="cmq-hint" id="card-hint" hidden>The full total is paid by card or e-wallet.</p>
+
+    <div class="d-flex gap-2 justify-content-end mt-4">
+      <a class="btn btn-secondary" href="{% url 'billing:bill_detail' bill.pk %}">Cancel</a>
+      <button type="submit" class="btn btn-success"><i class="bi bi-check2-circle"></i> Record payment</button>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Show the cash fields only for cash, and the change as the nurse types.
+  (function () {
+    var form = document.getElementById("pay-form");
+    var total = parseFloat(form.dataset.total);
+    var amount = document.getElementById("id_amount_received");
+    var cash = document.getElementById("cash-fields");
+    var hint = document.getElementById("card-hint");
+    var change = document.getElementById("change");
+
+    function method() {
+      var checked = form.querySelector("input[name=method]:checked");
+      return checked ? checked.value : "";
+    }
+    function update() {
+      var isCash = method() === "CASH";
+      cash.hidden = !isCash;
+      hint.hidden = isCash || !method();
+      var paid = parseFloat(amount.value);
+      var diff = isNaN(paid) ? 0 : paid - total;
+      change.textContent = diff < 0 ? "Not enough" : "RM " + diff.toFixed(2);
+      change.classList.toggle("text-danger", diff < 0);
+    }
+    form.addEventListener("change", update);
+    amount.addEventListener("input", update);
+    update();
+  })();
+</script>
+{% endblock %}

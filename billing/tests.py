@@ -204,3 +204,31 @@ class ReadTests(BillingTestCase):
             bs.sales_summary(viewed_by=self.nurse.user, start=TODAY, end=TODAY)
         with self.assertRaises(ValidationError):
             bs.sales_summary(viewed_by=self.admin.user, start=TODAY, end=TODAY - dt.timedelta(days=1))
+
+
+class BillPageTests(BillingTestCase):
+    def test_list_with_ready_to_bill_and_filters(self):
+        waiting = self.visit()
+        bill = self.bill(items=[(self.para, 20)])
+        self.client.force_login(self.nurse.user)
+        page = self.client.get("/billing/")
+        self.assertContains(page, "Ready to bill")
+        self.assertContains(page, waiting.ticket.patient.full_name.title())
+        self.assertContains(page, bill.bill_no)
+        self.assertContains(page, "RM 40.00")
+        self.assertNotContains(self.client.get("/billing/?status=paid"), bill.bill_no)
+
+    def test_detail_for_staff_and_owner_only(self):
+        siti = User.objects.create_user(username="siti@x.my", email="siti@x.my", password="x", role="PATIENT")
+        bill = self.bill(items=[(self.para, 20)], user=siti)
+        self.client.force_login(self.admin.user)
+        page = self.client.get(f"/billing/{bill.pk}/")
+        for text in ("Bill B-20261104-001", "Consultation fee", "Paracetamol 500mg", "RM 40.00", "Unpaid"):
+            self.assertContains(page, text)
+        self.client.force_login(siti)
+        self.assertEqual(self.client.get(f"/billing/{bill.pk}/").status_code, 200)
+        self.assertEqual(self.client.get("/billing/").status_code, 403)
+        other = self.bill()
+        self.assertEqual(self.client.get(f"/billing/{other.pk}/").status_code, 403)
+        self.client.force_login(self.doc.user)
+        self.assertEqual(self.client.get(f"/billing/{bill.pk}/").status_code, 403)

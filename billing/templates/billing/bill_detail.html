@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% load bill_tags %}
+
+{% block title %}Bill {{ bill.bill_no }} · ClinicMQ{% endblock %}
+
+{% block content %}
+<div class="cmq-form-page">
+  <div class="cmq-page-header">
+    <div>
+      <p class="cmq-eyebrow">
+        {% if is_patient %}
+          {% url "billing:my_bills" as back_url %}<a href="{{ back_url|default:'/accounts/dashboard/' }}"><i class="bi bi-arrow-left"></i> Back</a>
+        {% else %}
+          <a href="{% url 'billing:bill_list' %}"><i class="bi bi-arrow-left"></i> Back</a>
+        {% endif %}
+      </p>
+      <h1 class="cmq-title">Bill {{ bill.bill_no }}</h1>
+      <p class="cmq-subtitle">{% bill_badge bill.status %}</p>
+    </div>
+    <div class="cmq-page-actions">
+      {% if bill.status == "UNPAID" %}
+        {% if is_nurse %}
+          {% url "billing:bill_pay" bill.pk as pay_url %}
+          {% if pay_url %}<a class="btn btn-success" href="{{ pay_url }}"><i class="bi bi-cash-coin"></i> Record payment</a>{% endif %}
+        {% endif %}
+      {% elif bill.status == "PAID" %}
+        {% url "billing:receipt_pdf" bill.pk as receipt_url %}
+        {% if receipt_url %}
+          <a class="btn btn-secondary" href="{{ receipt_url }}" target="_blank" rel="noopener"><i class="bi bi-printer"></i> Print receipt</a>
+          <a class="btn btn-primary" href="{{ receipt_url }}?download=1"><i class="bi bi-download"></i> Download receipt</a>
+        {% endif %}
+      {% endif %}
+      {% if is_admin and bill.status != "VOID" %}
+        {% url "billing:bill_void" bill.pk as void_url %}
+        {% if void_url %}<a class="btn btn-outline-danger" href="{{ void_url }}"><i class="bi bi-x-circle"></i> Void</a>{% endif %}
+      {% endif %}
+    </div>
+  </div>
+
+  {% if bill.status == "VOID" %}
+    <div class="cmq-alert cmq-alert-error" role="status">
+      <i class="bi bi-x-circle"></i>
+      <div class="cmq-alert-body"><strong>This bill is void.</strong> Reason: {{ bill.void_reason }}</div>
+    </div>
+  {% endif %}
+
+  <section class="cmq-card cmq-invoice">
+    <div class="row g-3 mb-4">
+      <div class="col-sm-6">
+        <div class="cmq-muted">Billed to</div>
+        <strong>{{ patient.full_name|title }}</strong>
+        <div class="cmq-muted">{{ patient.ic_no }}</div>
+      </div>
+      <div class="col-sm-6 text-sm-end">
+        <div class="cmq-muted">Date</div>
+        <div>{{ bill.created_at|date:"j M Y" }}, {{ bill.created_at|time:"g:i A" }}</div>
+        <div class="cmq-muted">Dr. {{ bill.consultation.doctor.full_name }} · {{ bill.consultation.diagnosis }}</div>
+      </div>
+    </div>
+
+    <div style="overflow-x:auto">
+      <table class="cmq-table">
+        <thead><tr><th>Item</th><th class="text-end">Qty</th><th class="text-end">Unit price</th><th class="text-end">Amount</th></tr></thead>
+        <tbody>
+          {% for i in items %}
+            <tr>
+              <td>{{ i.description }}</td>
+              <td class="text-end">{{ i.quantity }}</td>
+              <td class="text-end text-nowrap">{{ i.unit_price|rm }}</td>
+              <td class="text-end text-nowrap">{{ i.line_total|rm }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="cmq-invoice-totals">
+      <div class="cmq-money-row is-total"><span>Total</span><span>{{ total|rm }}</span></div>
+      {% if bill.status == "PAID" %}
+        <div class="cmq-money-row"><span>Paid by {{ bill.get_payment_method_display }}</span><span>{{ bill.amount_paid|rm }}</span></div>
+        {% if change is not None %}<div class="cmq-money-row"><span>Change</span><span>{{ change|rm }}</span></div>{% endif %}
+        <p class="cmq-muted mb-0 mt-2" style="font-size:14px">Paid on {{ bill.paid_at|date:"j M Y" }}, {{ bill.paid_at|time:"g:i A" }}</p>
+      {% elif bill.status == "UNPAID" %}
+        <p class="cmq-muted mb-0 mt-2">Not paid yet.</p>
+      {% endif %}
+    </div>
+  </section>
+</div>
+{% endblock %}

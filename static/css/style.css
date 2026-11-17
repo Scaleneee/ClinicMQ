@@ -762,3 +762,6 @@ a.cmq-stat-card:hover { background: var(--cmq-wash); color: var(--cmq-ink); bord
 .cmq-sticky-bar strong { font-size: 24px; font-weight: 400; margin-left: 6px; }
 a.cmq-tag-mc { text-decoration: none; }
 a.cmq-tag-mc:hover { border-color: var(--cmq-ink); color: var(--cmq-ink); }
+
+/* ---------- Billing ---------- */
+.cmq-invoice-totals { max-width: 340px; margin: 16px 0 0 auto; }

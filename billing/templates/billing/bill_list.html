@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% load queue_tags bill_tags %}
+
+{% block title %}Billing · ClinicMQ{% endblock %}
+
+{% block content %}
+  <div class="cmq-page-header">
+    <div>
+      <p class="cmq-eyebrow">{% now "l, j F Y" %}</p>
+      <h1 class="cmq-title">Billing</h1>
+      <p class="cmq-subtitle">Bills for completed visits.</p>
+    </div>
+    <div class="cmq-page-actions">
+      {% if not is_nurse %}
+        {% url "billing:sales_summary" as summary_url %}
+        {% if summary_url %}<a class="btn btn-secondary" href="{{ summary_url }}"><i class="bi bi-graph-up"></i> Sales summary</a>{% endif %}
+      {% endif %}
+    </div>
+  </div>
+
+  {% if to_bill %}
+    <section class="cmq-card cmq-card-flush mb-4">
+      <div class="cmq-card-head">
+        <h2 class="cmq-section-title mb-0">Ready to bill</h2>
+        <span class="cmq-muted">{{ to_bill|length }} visit{{ to_bill|length|pluralize }}</span>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="cmq-table">
+          <thead><tr><th>No.</th><th>Patient</th><th>Doctor</th><th>Completed</th><th></th></tr></thead>
+          <tbody>
+            {% for c in to_bill %}
+              <tr>
+                <td class="cmq-no">{{ c.ticket.queue_no|queue_no }}</td>
+                <td>{{ c.ticket.patient.full_name|title }}<div class="cmq-muted" style="font-size:14px">{{ c.diagnosis }}</div></td>
+                <td>Dr. {{ c.doctor.full_name }}</td>
+                <td class="text-nowrap">{% if c.ticket.completed_at %}{{ c.ticket.completed_at|date:"j M" }}, {{ c.ticket.completed_at|time:"g:i A" }}{% else %}–{% endif %}</td>
+                <td class="text-end">
+                  {% url "billing:bill_create" c.pk as create_url %}
+                  {% if create_url %}<a class="btn btn-primary btn-sm" href="{{ create_url }}"><i class="bi bi-receipt"></i> Generate bill</a>
+                  {% else %}<span class="cmq-muted cmq-soon">Coming soon</span>{% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  {% endif %}
+
+  <form method="get" class="d-flex flex-wrap gap-2 mb-3" role="search">
+    {% if status != "all" %}<input type="hidden" name="status" value="{{ status }}">{% endif %}
+    {% include "_search_input.html" with id="bill-q" value=query placeholder="Bill no., patient name or IC" %}
+    <div class="cmq-field mb-0" style="min-width:170px">
+      <label for="bill-date" class="visually-hidden">Date</label>
+      <input type="date" id="bill-date" name="date" value="{{ day|date:'Y-m-d' }}" onchange="this.form.submit()">
+    </div>
+    <button type="submit" class="btn btn-secondary"><i class="bi bi-search"></i> Search</button>
+    {% if day %}<a class="btn btn-link" href="?{% if status != 'all' %}status={{ status }}&{% endif %}{% if query %}q={{ query|urlencode }}{% endif %}">All dates</a>{% endif %}
+  </form>
+
+  <nav class="cmq-pills" aria-label="Filter by status">
+    {% for p in pills %}
+      <a class="cmq-pill {% if p.active %}active{% endif %}"
+         href="?{% if p.key != 'all' %}status={{ p.key }}&{% endif %}{% if query %}q={{ query|urlencode }}&{% endif %}{% if day %}date={{ day|date:'Y-m-d' }}{% endif %}"
+         {% if p.active %}aria-current="page"{% endif %}>
+        {{ p.label }} <span class="cmq-pill-count">{{ p.count }}</span>
+      </a>
+    {% endfor %}
+  </nav>
+
+  <div class="cmq-table-wrap">
+    <table class="cmq-table">
+      <thead><tr><th>Bill no.</th><th>Date</th><th>Patient</th><th class="text-end">Total</th><th>Status</th><th>Method</th><th></th></tr></thead>
+      <tbody>
+        {% for b in bills %}
+          <tr class="cmq-row-link" onclick="location.href='{% url 'billing:bill_detail' b.pk %}'">
+            <td class="text-nowrap"><a href="{% url 'billing:bill_detail' b.pk %}">{{ b.bill_no }}</a></td>
+            <td class="text-nowrap">{{ b.created_at|date:"j M Y" }}</td>
+            <td>{{ b.consultation.ticket.patient.full_name|title }}</td>
+            <td class="text-end text-nowrap">{{ b.total_amount|rm }}</td>
+            <td>{% bill_badge b.status %}</td>
+            <td>{{ b.get_payment_method_display|default:"–" }}</td>
+            <td class="text-end"><i class="bi bi-chevron-right cmq-muted"></i></td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="7" class="cmq-empty-row">
+              <i class="bi bi-receipt"></i>
+              {% if query or day or status != "all" %}No bills match these filters.{% else %}No bills yet.{% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "_pagination.html" with page_obj=page_obj %}
+{% endblock %}

@@ -241,4 +241,59 @@ def search_patients(*, searched_by, query: str, limit: int = 20):
         conditions != phone_match
     return Patient.objects.filter(conditions).order_by("full_name")[:limit]
 
-    
+# ------------------------------------------------
+# Search patients (nurse, doctor, admin)
+# ------------------------------------------------
+STAFF_EDITABLE = {"ic_no", "full_name", "gender", "date_of_birth", "phone", "email", "address"}
+PATIENT_EDITABLE = {"phone", "email", "address"}
+
+@transaction.atomic
+def update_patient(*, updated_by, patient_id: int, **changes) -> Patient:
+    """
+    Update a patient's details.
+    - NURSE / ADMIN can edit every field.
+    - The PATIENT can edit only phone, email, and address on their own record.
+    """
+    patient = Patient.objects.select_for_update().get(pk=patient_id)
+
+    if not updated_by.is_authenticated:
+        raise PermissionDenied("Please log in.")
+    if updated_by.role in ("NURSE", "ADMIN"):
+        allowed = STAFF_EDITABLE
+    elif updated_by.role == "PATIENT" and patient.user_id == updated_by.id:
+        allowed = PATIENT_EDITABLE
+    else:
+        raise PermissionDenied("You cannot edit this patient.")
+
+    not_allowed = set(changes) - allowed
+    if not_allowed:
+        raise PermissionDenied(f"You cannot change: {', '.join(sorted(not_allowed))}.")
+
+    # clean the new values
+    cleaners = {"ic_no": normalize_ic, "full_name": normalize_name, "phone": normalize_phone}
+    for field, value in changes.items():
+        if field in cleaners:
+            changes[field] = cleaners[field](value)
+        elif field == "gender":
+            changes[field] = (value or "").strip().upper()
+        elif field == "email":
+            changes[field] = (value or "").strip().lower() or None
+        elif field == "address":
+            changes[field] = (value or "").strip() or None
+
+    # validate the record as it would look after the change
+    merged = {f: getattr(patient, f) for f in STAFF_EDITABLE}
+    merged.update(changes)
+    validate_patient_data(
+        ic_no=merged["ic_no"], full_name=merged["full_name"], gender=merged["gender"],
+        date_of_birth=merged["date_of_birth"], phone=merged["phone"], email=merged["email"],
+        exclude_patient_id=patient.pk,
+    )
+
+    for field, value in changes.items():
+        setattr(patient, field, value)
+    try:
+        patient.save(update_fields=list(changes) or None)
+    except IntegrityError:
+        raise ValidationError({"ic_no": "A patient with this IC is already registered."})
+    return patient

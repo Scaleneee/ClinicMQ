@@ -1,4 +1,4 @@
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, UserManager
 from django.db import models
 
 
@@ -9,8 +9,17 @@ class Session(models.TextChoices):
     NIGHT = "NIGHT", "Night"
 
 
+class ClinicUserManager(UserManager):
+    def create_superuser(self, username, email=None, password=None, **extra_fields):
+        # `manage.py createsuperuser` doesn't ask for a role, so make it ADMIN.
+        extra_fields.setdefault("role", "ADMIN")
+        return super().create_superuser(username, email, password, **extra_fields)
+
+
 class User(AbstractUser):
     """Login account with a clinic role. See guide.md → Database → User."""
+
+    objects = ClinicUserManager()
 
     class Role(models.TextChoices):
         PATIENT = "PATIENT", "Patient"

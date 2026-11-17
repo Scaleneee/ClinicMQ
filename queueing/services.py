@@ -480,29 +480,105 @@ def run_housekeeping(now=None):
 # ---------------------------------------------------------------------------
 # Read
 # ---------------------------------------------------------------------------
-def get_todays_ticket(patient):
-    """The patient's active ticket for today, or None.
+def get_todays_ticket(patient, now=None):
+    """The patient's open ticket for today, or None.
 
-    Active = not finished yet (WAITING, CHECKED_IN, SKIPPED, CALLED, IN_CONSULTATION).
-    R3 allows at most one, so this returns the latest just in case.
+    Open = WAITING, CHECKED_IN, SKIPPED, CALLED, IN_CONSULTATION or MISSED
+    (a missed ticket can still rejoin once). R3 allows only one.
     """
     if patient is None:
         return None
     return (
-        QueueTicket.objects.today()
-        .active()
-        .filter(patient=patient)
+        QueueTicket.objects.filter(
+            patient=patient, queue_date=_local_now(now).date(), status__in=OPEN_STATUSES,
+        )
         .select_related("doctor")
         .order_by("-issued_at")
         .first()
     )
 
 
-def people_ahead(ticket):
-    """How many patients will be called before this ticket.
+def now_serving(date, session):
+    """The ticket that is called or with the doctor right now, or None (R12: at most one)."""
+    return QueueTicket.objects.filter(
+        queue_date=date, session=session, status__in=SERVING_STATUSES,
+    ).first()
 
-    TODO (queue logic): count today's tickets in the same session that will be
-    called first: CHECKED_IN tickets ordered by (position, checked_in_at), R6/R11.
-    Returns None until implemented, and the page shows "–".
+
+def people_ahead(ticket):
+    """How many patients will be called before this ticket, or None if it isn't in line.
+
+    CHECKED_IN: checked-in patients before it in calling order (R6, R11).
+    WAITING:    checked-in patients with a smaller position (where they'd be if they
+                arrived now).
+    CALLED / IN_CONSULTATION: 0. SKIPPED / MISSED: None (they must check in again).
     """
+    line = waiting_line(ticket.queue_date, ticket.session)
+    if ticket.status == Status.CHECKED_IN:
+        before = Q(position__lt=ticket.position)
+        if ticket.checked_in_at is None:
+            # No check-in time (e.g. edited in the admin): treat it as the last to check in.
+            before |= Q(position=ticket.position, checked_in_at__isnull=False)
+        else:
+            before |= Q(position=ticket.position, checked_in_at__lt=ticket.checked_in_at)
+            before |= Q(position=ticket.position, checked_in_at=ticket.checked_in_at, ticket_id__lt=ticket.pk)
+        return line.exclude(pk=ticket.pk).filter(before).count()
+    if ticket.status == Status.WAITING:
+        return line.filter(position__lt=ticket.position).count()
+    if ticket.status in SERVING_STATUSES:
+        return 0
     return None
+
+
+def average_consult_minutes(date, setting=None):
+    """Today's average consultation time in minutes (default_consult_min until someone is seen)."""
+    setting = setting or ClinicSetting.load()
+    done = QueueTicket.objects.filter(
+        queue_date=date, status=Status.COMPLETED,
+        started_at__isnull=False, completed_at__isnull=False,
+    ).values_list("started_at", "completed_at")
+    minutes = [(end - start).total_seconds() / 60 for start, end in done if end > start]
+    if not minutes:
+        return setting.default_consult_min
+    return max(1, round(sum(minutes) / len(minutes)))
+
+
+def live_status(ticket, now=None):
+    """Everything the My queue page shows for a ticket.
+
+    Returns a dict:
+        ticket, now_serving      - tickets (now_serving may be None)
+        ahead                    - people ahead, or None if not in line
+        place                    - "You are Nth in line" (checked-in only), else None
+        wait_min, wait_max       - estimated wait range in minutes, or None
+        avg_consult_min          - today's average consultation time
+        come_now                 - True at near_alert_threshold (3) or fewer ahead
+        pushed_back              - True if more people are ahead than last time (late
+                                   patients rejoined ahead): show the ▲ note
+    Also remembers the ahead count in ticket.last_ahead for the next refresh.
+    """
+    setting = ClinicSetting.load()
+    ahead = people_ahead(ticket)
+    avg = average_consult_minutes(ticket.queue_date, setting)
+
+    pushed_back = ahead is not None and ticket.last_ahead is not None and ahead > ticket.last_ahead
+    if ahead is not None and ahead != ticket.last_ahead:
+        QueueTicket.objects.filter(pk=ticket.pk).update(last_ahead=ahead)
+        ticket.last_ahead = ahead
+
+    in_line = ticket.status in (Status.WAITING, Status.CHECKED_IN)
+    come_now = in_line and ahead is not None and ahead <= setting.near_alert_threshold
+    # TODO (alerts): when come_now and not ticket.near_alert_sent, send the
+    # "Please come now" WhatsApp and set near_alert_sent = True.
+
+    return {
+        "ticket": ticket,
+        "now_serving": now_serving(ticket.queue_date, ticket.session),
+        "ahead": ahead,
+        "place": ahead + 1 if ticket.status == Status.CHECKED_IN else None,
+        "wait_min": ahead * avg if in_line and ahead is not None else None,
+        "wait_max": (ahead + 1) * avg if in_line and ahead is not None else None,
+        "avg_consult_min": avg,
+        "come_now": come_now,
+        "pushed_back": pushed_back,
+    }

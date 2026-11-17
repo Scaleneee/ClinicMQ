@@ -22,8 +22,11 @@ Every function that depends on the time takes an optional `now` so it can be tes
 """
 
 import datetime as dt
+import hashlib
+import hmac
 from decimal import ROUND_DOWN, Decimal
 
+from django.conf import settings
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import IntegrityError, transaction
 from django.db.models import Max, Q
@@ -241,7 +244,10 @@ def _late_position(ticket, setting):
     after = line[i]
 
     if i + 1 == len(line):
-        return after.position + 1                  # end of the line
+        position = after.position + 1              # end of the line
+        if position == Decimal(ticket.queue_no):
+            position += CENT                       # keep it marked as "moved"
+        return position
     before = line[i + 1]
     position = ((after.position + before.position) / 2).quantize(CENT, rounding=ROUND_DOWN)
     if position == Decimal(ticket.queue_no) and position - CENT >= after.position:
@@ -582,3 +588,123 @@ def live_status(ticket, now=None):
         "come_now": come_now,
         "pushed_back": pushed_back,
     }
+
+
+def latest_ticket_today(patient, now=None):
+    """The patient's most recent ticket today in any status (for My queue), or None."""
+    if patient is None:
+        return None
+    return (
+        QueueTicket.objects.filter(patient=patient, queue_date=_local_now(now).date())
+        .select_related("doctor")
+        .order_by("-issued_at")
+        .first()
+    )
+
+
+# ---------------------------------------------------------------------------
+# Screens: session overview, queue board, doctor stats
+# ---------------------------------------------------------------------------
+def board_session(now=None, setting=None):
+    """The session to show on staff screens: the open one, else the latest one today."""
+    setting = setting or ClinicSetting.load()
+    session = current_session(now, setting)
+    if session:
+        return session
+    night_start, _ = session_hours(Session.NIGHT, setting)
+    return Session.NIGHT if _local_now(now).time() >= night_start else Session.MORNING
+
+
+def queue_overview(now=None):
+    """Session strip and Get number card: what's open, who's on duty, how busy it is."""
+    now = _local_now(now)
+    today = now.date()
+    setting = ClinicSetting.load()
+    open_session = current_session(now, setting)
+    session = open_session or board_session(now, setting)
+    doctor = doctor_on_duty(today, session)
+    waiting = waiting_line(today, session).count()
+    avg = average_consult_minutes(today, setting)
+    cutoff = online_cutoff(today, session, setting)
+
+    if open_session is None:
+        closed_reason = closed_message(setting)
+    elif doctor is None:
+        closed_reason = "No doctor is on duty this session, so queue numbers can't be issued."
+    elif now >= cutoff:
+        closed_reason = (f"Online numbers for the {session.lower()} session closed at "
+                         f"{_fmt_time(timezone.localtime(cutoff).time())}. Please come to the counter.")
+    else:
+        closed_reason = None
+
+    return {
+        "now": now,
+        "date": today,
+        "session": session,
+        "session_label": Session(session).label,
+        "is_open": open_session is not None,
+        "doctor": doctor,
+        "now_serving": now_serving(today, session),
+        "waiting": waiting,
+        "avg_consult_min": avg,
+        "wait_min": waiting * avg,
+        "wait_max": (waiting + 1) * avg,
+        "online_open": closed_reason is None,
+        "online_until": timezone.localtime(cutoff).time(),
+        "closed_reason": closed_reason,
+    }
+
+
+_BOARD_GROUP = {
+    Status.IN_CONSULTATION: 0, Status.CALLED: 0, Status.CHECKED_IN: 1, Status.WAITING: 2,
+    Status.SKIPPED: 3, Status.MISSED: 3, Status.COMPLETED: 4, Status.CANCELLED: 5, Status.EXPIRED: 5,
+}
+
+
+def board_tickets(date, session):
+    """Tickets for the nurse's queue board, in a useful order.
+
+    With the doctor first, then the line (with .place 1, 2, 3...), then not arrived,
+    skipped/missed, completed, and cancelled/expired. Each ticket also gets .is_late
+    (checked in late under R7/R8, shown as a tag).
+    """
+    tickets = list(
+        QueueTicket.objects.filter(queue_date=date, session=session).select_related("patient")
+    )
+    min_time = dt.datetime.min.replace(tzinfo=dt.timezone.utc)
+    tickets.sort(key=lambda t: (
+        _BOARD_GROUP.get(t.status, 9),
+        t.position if t.status in (Status.CHECKED_IN, Status.WAITING) else t.queue_no,
+        t.checked_in_at or min_time,
+        t.pk,
+    ))
+    place = 0
+    for t in tickets:
+        t.place = None
+        if t.status == Status.CHECKED_IN:
+            place += 1
+            t.place = place
+        t.is_late = t.status == Status.CHECKED_IN and (t.rejoined or _was_moved(t))
+    return tickets
+
+
+def doctor_stats(date, session):
+    """Small numbers for the doctor console header."""
+    return {
+        "waiting": waiting_line(date, session).count(),
+        "seen": QueueTicket.objects.filter(queue_date=date, session=session, status=Status.COMPLETED).count(),
+        "avg_consult_min": average_consult_minutes(date),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Daily check-in QR (shown on the waiting-room TV board)
+# ---------------------------------------------------------------------------
+def checkin_code(date):
+    """A code that changes every day, so a photo of yesterday's QR stops working."""
+    message = f"clinicmq-checkin:{date.isoformat()}".encode()
+    return hmac.new(settings.SECRET_KEY.encode(), message, hashlib.sha256).hexdigest()[:16]
+
+
+def is_valid_checkin_code(code, now=None):
+    return hmac.compare_digest(str(code), checkin_code(_local_now(now).date()))

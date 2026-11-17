@@ -436,3 +436,83 @@ a.cmq-link-row:hover { background: var(--cmq-wash); color: var(--cmq-ink); }
   padding: 1px 10px;
   white-space: nowrap;
 }
+
+/* ---------- Page header (UI.md §4): eyebrow, title, subtitle, actions on the right ---------- */
+.cmq-page-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+.cmq-page-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+@media (max-width: 575.98px) {
+  .cmq-page-actions { width: 100%; }
+  .cmq-page-actions .btn { flex: 1; }
+}
+
+/* ---------- Stat cards ---------- */
+.cmq-stats { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--cmq-line); border-radius: var(--cmq-radius); }
+.cmq-stat { padding: 14px 12px; text-align: center; }
+.cmq-stat + .cmq-stat { border-left: 1px solid var(--cmq-line); }
+.cmq-stat-label { font-size: 14px; color: var(--cmq-muted); margin-bottom: 2px; }
+.cmq-stat-value { font-size: 28px; line-height: 1.2; }
+.cmq-stat-note { font-size: 13px; color: var(--cmq-muted); }
+
+/* ---------- Filter pills ---------- */
+.cmq-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.cmq-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 12px; border: 1px solid var(--cmq-line); border-radius: 999px;
+  color: var(--cmq-ink-soft); text-decoration: none; font-size: 15px; background: var(--cmq-paper);
+}
+.cmq-pill:hover { background: var(--cmq-wash); color: var(--cmq-ink); }
+.cmq-pill.active { background: var(--cmq-ink); border-color: var(--cmq-ink); color: #fff; }
+.cmq-pill-count { color: inherit; opacity: 0.7; }
+
+/* ---------- Table (no vertical lines, light dividers, muted header) ---------- */
+.cmq-table { width: 100%; border-collapse: collapse; }
+.cmq-table th {
+  font-weight: 400; font-size: 15px; color: var(--cmq-muted); text-align: left;
+  padding: 10px 12px; border-bottom: 1px solid var(--cmq-line); white-space: nowrap;
+}
+.cmq-table td { padding: 12px; border-bottom: 1px solid var(--cmq-line); vertical-align: middle; }
+.cmq-table tbody tr:hover { background: var(--cmq-wash); }
+.cmq-table tr.is-serving { background: #efefef; }
+.cmq-table .cmq-no { font-size: 20px; }
+.cmq-table-wrap { overflow-x: auto; border: 1px solid var(--cmq-line); border-radius: var(--cmq-radius); }
+.cmq-table-wrap .cmq-table tr:last-child td { border-bottom: 0; }
+.cmq-row-actions { display: flex; gap: 8px; justify-content: flex-end; white-space: nowrap; }
+
+/* ---------- Tags, live dot, banners ---------- */
+.cmq-tag-late {
+  display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 4px;
+  font-size: 13px; color: #7a5c00; background: var(--cmq-yellow-wash);
+}
+.cmq-live { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--cmq-muted); }
+.cmq-live::before {
+  content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--cmq-green);
+  animation: cmq-live-dot 1.6s ease-in-out infinite;
+}
+@keyframes cmq-live-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+
+.cmq-banner { border-radius: var(--cmq-radius); padding: 18px 20px; font-size: 19px; margin-bottom: 16px; }
+.cmq-banner strong { display: block; font-size: 22px; font-weight: 700; margin-bottom: 2px; }
+.cmq-banner-red { background: var(--cmq-red); color: #fff; animation: cmq-pulse 1.4s ease-in-out infinite; }
+.cmq-banner-yellow { background: var(--cmq-yellow-wash); border: 1px solid var(--cmq-yellow); color: #5c4500; }
+.cmq-banner-outline-red { border: 1px solid var(--cmq-red); color: var(--cmq-red); background: var(--cmq-paper); }
+.cmq-banner-green { background: var(--cmq-green-wash); color: var(--cmq-green); }
+@media (prefers-reduced-motion: reduce) {
+  .cmq-live::before, .cmq-banner-red { animation: none; }
+}
+
+/* ---------- Modal ---------- */
+.cmq-modal { border: 1px solid var(--cmq-line); border-radius: var(--cmq-radius); box-shadow: none; }
+.cmq-modal .modal-body { padding: 24px 24px 8px; }
+.cmq-modal .modal-footer { border-top: 0; padding: 8px 24px 24px; gap: 8px; }
+.cmq-modal .modal-footer > * { margin: 0; }
+
+/* ---------- Empty state ---------- */
+.cmq-empty-row { text-align: center; padding: 40px 16px !important; color: var(--cmq-muted); }
+.cmq-empty-row .bi { display: block; font-size: 28px; margin-bottom: 6px; }

@@ -19,8 +19,28 @@
             {% include "_nav_link.html" with name="consultation:my_visits" icon="clock-history" label="My visits" %}
             {% include "_nav_link.html" with name="billing:my_bills" icon="receipt" label="My bills" %}
             {% include "_nav_link.html" with name="patients:my_profile" icon="person" label="Profile" %}
+          {% elif user.role == "NURSE" %}
+            {% include "_nav_link.html" with name="dashboard" icon="grid" label="Dashboard" %}
+            {% include "_nav_link.html" with name="queueing:board" icon="list-ol" label="Queue board" %}
+            {% include "_nav_link.html" with name="queueing:walk_in" icon="person-plus" label="Walk-in" %}
+            {% include "_nav_link.html" with name="patients:list" icon="people" label="Patients" %}
+            {% include "_nav_link.html" with name="pharmacy:medicine_list" icon="capsule" label="Medicine" %}
+            {% include "_nav_link.html" with name="pharmacy:dispense_list" icon="bag-check" label="Dispense" %}
+            {% include "_nav_link.html" with name="billing:bill_list" icon="receipt" label="Billing" %}
+          {% elif user.role == "DOCTOR" %}
+            {% include "_nav_link.html" with name="dashboard" icon="grid" label="Dashboard" %}
+            {% include "_nav_link.html" with name="queueing:console" icon="clipboard2-pulse" label="Doctor console" %}
+            {% include "_nav_link.html" with name="consultation:list" icon="journal-medical" label="Consultations" %}
+            {% include "_nav_link.html" with name="patients:list" icon="people" label="Patients" %}
+            {% include "_nav_link.html" with name="pharmacy:medicine_list" icon="capsule" label="Medicine" %}
           {% else %}
             {% include "_nav_link.html" with name="dashboard" icon="grid" label="Dashboard" %}
+            {% include "_nav_link.html" with name="staff_list" icon="person-badge" label="Staff" %}
+            {% include "_nav_link.html" with name="roster" icon="calendar-week" label="Schedules" %}
+            {% include "_nav_link.html" with name="patients:list" icon="people" label="Patients" %}
+            {% include "_nav_link.html" with name="pharmacy:medicine_list" icon="capsule" label="Medicine" %}
+            {% include "_nav_link.html" with name="billing:bill_list" icon="receipt" label="Billing" %}
+            {% include "_nav_link.html" with name="billing:sales_summary" icon="graph-up" label="Sales summary" %}
           {% endif %}
         </ul>
 

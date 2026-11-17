@@ -169,6 +169,17 @@ class GraceRuleTests(QueueTestCase):
         t1.refresh_from_db()
         self.assertEqual(t1.position, Decimal("4"))
 
+    def test_late_at_end_of_line_still_counts_as_moved(self):
+        # 4 is skipped; line [1, 2, 3] -> end of line would be position 4 = its own number
+        tickets = {n: self.take(n) for n in range(1, 5)}
+        for n in (1, 2, 3):
+            self.check_in(tickets[n], at(9, 10, n))
+        QueueTicket.objects.filter(pk=tickets[4].pk).update(status="SKIPPED")
+        t4 = self.check_in(tickets[4], at(9, 30))
+        self.assertEqual(self.line(), [1, 2, 3, 4])
+        self.assertNotEqual(t4.position, Decimal(4))
+        self.assertTrue(q.board_tickets(DAY, "MORNING")[3].is_late)
+
 
 class MissedRuleTests(QueueTestCase):
     def test_no_show_rejoin_once_then_cancel(self):  # R8

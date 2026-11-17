@@ -1,0 +1,21 @@
+{% comment %}
+  One shared confirm modal (UI.md §3). Any form can use it:
+    <form method="post" data-confirm-title="Cancel number 012?"
+          data-confirm-text="You will lose your place in the queue."
+          data-confirm-button="Cancel number">
+  static/js/confirm.js opens this modal before the form is sent.
+{% endcomment %}
+<div class="modal fade" id="cmqConfirm" tabindex="-1" aria-labelledby="cmqConfirmTitle" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content cmq-modal">
+      <div class="modal-body">
+        <h2 class="cmq-section-title mb-2" id="cmqConfirmTitle">Are you sure?</h2>
+        <p class="mb-0 cmq-muted" id="cmqConfirmText"></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-outline-danger" id="cmqConfirmOk">Confirm</button>
+      </div>
+    </div>
+  </div>
+</div>

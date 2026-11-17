@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}Staff · ClinicMQ{% endblock %}
+
+{% block content %}
+  <div class="cmq-page-header">
+    <div>
+      <p class="cmq-eyebrow">{% now "l, j F Y" %}</p>
+      <h1 class="cmq-title">Staff</h1>
+      <p class="cmq-subtitle">Doctors, nurses and admins who work at the clinic.</p>
+    </div>
+    <div class="cmq-page-actions">
+      {% url "roster" as roster_url %}
+      {% if roster_url %}<a class="btn btn-secondary" href="{{ roster_url }}"><i class="bi bi-calendar-week"></i> Weekly roster</a>{% endif %}
+      {% if is_admin %}
+        {% url "staff_create" as create_url %}
+        {% if create_url %}<a class="btn btn-primary" href="{{ create_url }}"><i class="bi bi-person-plus"></i> Add staff</a>{% endif %}
+      {% endif %}
+    </div>
+  </div>
+
+  <form method="get" class="d-flex gap-2 mb-3" role="search">
+    {% if role_key != "all" %}<input type="hidden" name="role" value="{{ role_key }}">{% endif %}
+    {% include "_search_input.html" with id="staff-q" value=query placeholder="Name, email or role" %}
+    <button type="submit" class="btn btn-secondary"><i class="bi bi-search"></i> Search</button>
+  </form>
+
+  <nav class="cmq-pills" aria-label="Filter by role">
+    {% for p in pills %}
+      <a class="cmq-pill {% if p.active %}active{% endif %}"
+         href="?{% if p.key != 'all' %}role={{ p.key }}{% endif %}{% if query %}{% if p.key != 'all' %}&{% endif %}q={{ query|urlencode }}{% endif %}"
+         {% if p.active %}aria-current="page"{% endif %}>
+        {{ p.label }} <span class="cmq-pill-count">{{ p.count }}</span>
+      </a>
+    {% endfor %}
+  </nav>
+
+  <div class="cmq-table-wrap">
+    <table class="cmq-table">
+      <thead>
+        <tr>
+          <th>Name</th><th>Role</th><th>Specialty</th><th>Phone</th><th>Status</th>
+          {% if is_admin %}<th class="text-end">Actions</th>{% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in staff %}
+          <tr class="{% if not s.is_active %}is-inactive{% endif %}">
+            <td>
+              {% if s.role == "DOCTOR" %}Dr. {% endif %}{{ s.full_name }}
+              <div class="cmq-muted" style="font-size:14px">{{ s.user.email }}</div>
+            </td>
+            <td>{{ s.get_role_display }}</td>
+            <td>{{ s.specialty|default:"–" }}</td>
+            <td>{{ s.phone }}</td>
+            <td>
+              {% if s.is_active and s.user.is_active %}
+                <span class="cmq-badge cmq-badge-checked-in"><span class="cmq-badge-dot"></span>Active</span>
+              {% else %}
+                <span class="cmq-badge cmq-badge-closed"><span class="cmq-badge-dot"></span>Inactive</span>
+              {% endif %}
+            </td>
+            {% if is_admin %}
+              <td><div class="cmq-row-actions">{% include "accounts/staff/_staff_actions.html" %}</div></td>
+            {% endif %}
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="6" class="cmq-empty-row">
+              <i class="bi bi-person-badge"></i>
+              {% if query %}No staff match "{{ query }}".{% else %}No staff yet.{% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}

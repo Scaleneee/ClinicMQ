@@ -653,3 +653,6 @@ body.cmq-tv { height: 100vh; overflow: hidden; }
 .cmq-search-clear:focus-visible { outline: 2px solid var(--cmq-ink); }
 /* Only show the × when there is text */
 .cmq-search input:placeholder-shown ~ .cmq-search-clear { display: none; }
+
+/* ---------- Staff ---------- */
+.cmq-table tr.is-inactive td { color: var(--cmq-muted); }

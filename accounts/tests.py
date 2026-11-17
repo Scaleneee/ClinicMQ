@@ -163,3 +163,37 @@ class ShiftTests(StaffTestCase):
     def test_only_admin_manages_shifts(self):
         with self.assertRaises(PermissionDenied):
             acc.add_shift(added_by=self.nurse.user, staff_id=self.nurse.pk, shift_date=TODAY, session="MORNING")
+
+
+# ---------------------------------------------------------------------------
+# Screens
+# ---------------------------------------------------------------------------
+from django.urls import reverse  # noqa: E402
+
+
+class StaffListScreenTests(StaffTestCase):
+    def setUp(self):
+        super().setUp()
+        self.doc = self.make_staff("Aisyah Rahman", "DOCTOR", specialty="General practice")
+        self.nurse = self.make_staff("Farah Lim", "NURSE")
+
+    def test_list_filters_and_search(self):
+        self.client.force_login(self.admin_user)
+        page = self.client.get(reverse("staff_list"))
+        self.assertContains(page, "Dr. Aisyah Rahman")
+        self.assertContains(page, 'Doctors <span class="cmq-pill-count">1</span>')
+        page = self.client.get(reverse("staff_list") + "?role=nurses")
+        self.assertContains(page, "Farah Lim")
+        self.assertNotContains(page, "Aisyah")
+        page = self.client.get(reverse("staff_list") + "?q=farah.lim@clinic")
+        self.assertContains(page, "Farah Lim")
+        self.assertNotContains(page, "Aisyah")
+
+    def test_all_staff_can_view_but_patients_cannot(self):
+        self.client.force_login(self.nurse.user)
+        page = self.client.get(reverse("staff_list"))
+        self.assertEqual(page.status_code, 200)
+        self.assertNotContains(page, "Add staff")
+        patient = User.objects.create_user(username="p@x.my", email="p@x.my", password="x", role="PATIENT")
+        self.client.force_login(patient)
+        self.assertEqual(self.client.get(reverse("staff_list")).status_code, 403)

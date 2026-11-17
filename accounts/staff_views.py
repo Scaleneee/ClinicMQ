@@ -5,6 +5,8 @@ Staff & Schedule screens (UI.md §5.5). Views stay thin: they call accounts/serv
 Everyone on the staff can view the staff list and roster; only admins change them.
 """
 
+import datetime as dt
+
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.shortcuts import get_object_or_404, redirect, render
@@ -12,7 +14,7 @@ from django.views.decorators.http import require_POST
 
 from . import services as acc
 from .decorators import role_required
-from .models import Staff
+from .models import Session, Staff
 from .staff_forms import StaffForm
 
 STAFF_ROLES = ("NURSE", "DOCTOR", "ADMIN")
@@ -147,3 +149,51 @@ def staff_reactivate(request, pk):
     _run(request, lambda: acc.reactivate_staff(reactivated_by=request.user, staff_id=pk),
          lambda s: f"{acc.display_name(s)} was reactivated and can log in again.")
     return redirect("staff_list")
+
+
+# ---------------------------------------------------------------------------
+# Schedule: weekly roster (all staff can view)
+# ---------------------------------------------------------------------------
+def _week_label(start):
+    end = start + dt.timedelta(days=6)
+    if start.month == end.month:
+        return f"{start.day}–{end.day} {end:%b %Y}"
+    if start.year == end.year:
+        return f"{start.day} {start:%b} – {end.day} {end:%b %Y}"
+    return f"{start.day} {start:%b %Y} – {end.day} {end:%b %Y}"
+
+
+def _parse_week(value):
+    try:
+        return acc.week_start(dt.date.fromisoformat(value))
+    except (TypeError, ValueError):
+        return acc.week_start()
+
+
+@role_required(*STAFF_ROLES)
+def roster(request):
+    from queueing.services import session_hours
+
+    start = _parse_week(request.GET.get("week"))
+    days = acc.week_roster(start, viewed_by=request.user)
+    sessions = []
+    for session in (Session.MORNING, Session.NIGHT):
+        begin, end = session_hours(session)
+        sessions.append({
+            "key": session,
+            "label": Session(session).label,
+            "hours": f"{begin:%I:%M %p}".lstrip("0") + " – " + f"{end:%I:%M %p}".lstrip("0"),
+            "cells": [{"day": d, "shifts": d["sessions"][session],
+                       "has_doctor": any(s.staff.role == Staff.Role.DOCTOR and s.staff.is_active
+                                         for s in d["sessions"][session])} for d in days],
+        })
+    return render(request, "accounts/staff/roster.html", {
+        "days": days,
+        "sessions": sessions,
+        "week_label": _week_label(start),
+        "prev_week": (start - dt.timedelta(days=7)).isoformat(),
+        "next_week": (start + dt.timedelta(days=7)).isoformat(),
+        "this_week": acc.week_start(),
+        "start": start,
+        "is_admin": request.user.role == "ADMIN",
+    })

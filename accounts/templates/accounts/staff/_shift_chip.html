@@ -1,0 +1,9 @@
+{# One staff member on the roster. Admins can click a chip (today or later) to edit the shift. #}
+{% with s=shift.staff %}
+  {% url "shift_edit" shift.pk as edit_url %}
+  {% if is_admin and edit_url and not cell.day.is_past %}<a href="{{ edit_url }}"{% else %}<span{% endif %}
+    class="cmq-chip {% if s.role == 'DOCTOR' %}cmq-chip-doctor{% endif %} {% if not s.is_active or not s.user.is_active %}cmq-chip-inactive{% endif %}"
+    title="{{ s.get_role_display }}{% if not s.is_active or not s.user.is_active %} (deactivated){% endif %}">
+    {% if s.role == "DOCTOR" %}Dr. {% elif s.role == "NURSE" %}Nurse {% endif %}{{ s.full_name }}
+  {% if is_admin and edit_url and not cell.day.is_past %}</a>{% else %}</span>{% endif %}
+{% endwith %}

@@ -656,3 +656,28 @@ body.cmq-tv { height: 100vh; overflow: hidden; }
 
 /* ---------- Staff ---------- */
 .cmq-table tr.is-inactive td { color: var(--cmq-muted); }
+
+/* ---------- Weekly roster ---------- */
+.cmq-week-nav { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+.cmq-week-label { font-size: 20px; font-weight: 400; min-width: 150px; text-align: center; }
+.cmq-roster { min-width: 900px; table-layout: fixed; }
+.cmq-roster th, .cmq-roster td { vertical-align: top; border-left: 1px solid var(--cmq-line); }
+.cmq-roster th:first-child, .cmq-roster td:first-child { border-left: 0; }
+.cmq-roster thead th { text-align: center; color: var(--cmq-ink); }
+.cmq-roster-date { color: var(--cmq-muted); font-size: 14px; }
+.cmq-roster .cmq-roster-session { width: 130px; font-weight: 700; text-align: left; }
+.cmq-roster .cmq-roster-session .cmq-muted { font-weight: 400; font-size: 13px; }
+.cmq-roster .is-today { background: var(--cmq-wash); }
+.cmq-roster thead th.is-today { box-shadow: inset 0 3px 0 var(--cmq-ink); }
+.cmq-roster td.is-past { opacity: 0.6; }
+.cmq-roster tbody tr:hover { background: transparent; }
+.cmq-chip {
+  display: block; margin-bottom: 6px; padding: 3px 8px; border: 1px solid var(--cmq-line);
+  border-radius: 6px; font-size: 14px; line-height: 1.3; background: var(--cmq-paper);
+  color: var(--cmq-ink); text-decoration: none; overflow-wrap: anywhere;
+}
+.cmq-hint .cmq-chip { display: inline-block; margin: 0 2px; }
+a.cmq-chip:hover { border-color: var(--cmq-ink); color: var(--cmq-ink); }
+.cmq-chip-doctor { border-color: var(--cmq-ink); font-weight: 700; }
+.cmq-chip-inactive { color: var(--cmq-muted); text-decoration: line-through; border-style: dashed; font-weight: 400; }
+.cmq-chip-warning { background: var(--cmq-yellow-wash); border-color: var(--cmq-yellow); color: #7a5c00; }

@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Weekly roster · ClinicMQ{% endblock %}
+
+{% block content %}
+  <div class="cmq-page-header">
+    <div>
+      <p class="cmq-eyebrow">{% now "l, j F Y" %}</p>
+      <h1 class="cmq-title">Weekly roster</h1>
+      <p class="cmq-subtitle">Who works each Morning and Night session. One doctor per session.</p>
+    </div>
+    <div class="cmq-page-actions">
+      <a class="btn btn-secondary" href="{% url 'staff_list' %}"><i class="bi bi-person-badge"></i> Staff</a>
+      {% if is_admin %}
+        {% url "shift_create" as add_url %}
+        {% if add_url %}<a class="btn btn-primary" href="{{ add_url }}?week={{ start|date:'Y-m-d' }}"><i class="bi bi-plus-lg"></i> Add shift</a>{% endif %}
+      {% endif %}
+    </div>
+  </div>
+
+  {# Week navigation #}
+  <nav class="cmq-week-nav" aria-label="Week">
+    <a class="btn btn-secondary btn-sm" href="?week={{ prev_week }}"><i class="bi bi-chevron-left"></i> Previous</a>
+    <strong class="cmq-week-label">{{ week_label }}</strong>
+    <a class="btn btn-secondary btn-sm" href="?week={{ next_week }}">Next <i class="bi bi-chevron-right"></i></a>
+    {% if start != this_week %}<a class="btn btn-link btn-sm" href="{% url 'roster' %}">This week</a>{% endif %}
+  </nav>
+
+  <div class="cmq-table-wrap">
+    <table class="cmq-table cmq-roster">
+      <thead>
+        <tr>
+          <th class="cmq-roster-session"></th>
+          {% for d in days %}
+            <th class="{% if d.is_today %}is-today{% endif %}">
+              {{ d.date|date:"D" }}<div class="cmq-roster-date">{{ d.date|date:"j M" }}</div>
+              {% if d.is_today %}<span class="visually-hidden">(today)</span>{% endif %}
+            </th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in sessions %}
+          <tr>
+            <th scope="row" class="cmq-roster-session">{{ row.label }}<div class="cmq-muted">{{ row.hours }}</div></th>
+            {% for cell in row.cells %}
+              <td class="{% if cell.day.is_today %}is-today{% endif %} {% if cell.day.is_past %}is-past{% endif %}">
+                {% for shift in cell.shifts %}
+                  {% include "accounts/staff/_shift_chip.html" %}
+                {% endfor %}
+                {% if not cell.has_doctor and not cell.day.is_past %}
+                  <span class="cmq-chip cmq-chip-warning" title="Queue numbers can't be issued without a doctor">No doctor</span>
+                {% endif %}
+              </td>
+            {% endfor %}
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <p class="cmq-hint mt-3">
+    <span class="cmq-chip cmq-chip-doctor">Dr.</span> doctor ·
+    <span class="cmq-chip">Nurse</span> nurse ·
+    <span class="cmq-chip cmq-chip-inactive">Deactivated</span> doesn't count as on duty
+    {% if is_admin %}· Past days can't be changed.{% endif %}
+  </p>
+{% endblock %}

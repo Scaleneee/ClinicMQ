@@ -263,3 +263,36 @@ class DeactivateScreenTests(StaffTestCase):
         nurse = self.make_staff("Farah Lim", "NURSE")
         self.client.force_login(self.admin_user)
         self.assertEqual(self.client.get(reverse("staff_deactivate", args=[nurse.pk])).status_code, 405)
+
+
+class RosterScreenTests(StaffTestCase):
+    def setUp(self):
+        super().setUp()
+        self.doc = self.make_staff("Aisyah Rahman", "DOCTOR")
+        self.nurse = self.make_staff("Farah Lim", "NURSE")
+        self.add(self.doc)
+        self.add(self.nurse)
+
+    def test_week_grid(self):
+        self.client.force_login(self.nurse.user)  # everyone on the staff can view
+        page = self.client.get(reverse("roster"))
+        self.assertContains(page, "2–8 Nov 2026")
+        self.assertContains(page, "Dr. Aisyah Rahman")
+        self.assertContains(page, "Nurse Farah Lim")
+        self.assertContains(page, "9:00 AM – 1:00 PM")
+        self.assertContains(page, "No doctor")        # e.g. tonight
+        self.assertContains(page, 'class="is-today')
+
+    def test_week_navigation(self):
+        self.client.force_login(self.admin_user)
+        page = self.client.get(reverse("roster") + "?week=2026-11-12")  # any day -> its Monday
+        self.assertContains(page, "9–15 Nov 2026")
+        self.assertContains(page, "?week=2026-11-02")  # previous
+        self.assertContains(page, "This week")
+        page = self.client.get(reverse("roster") + "?week=2026-11-30")
+        self.assertContains(page, "30 Nov – 6 Dec 2026")
+
+    def test_deactivated_staff_greyed_out(self):
+        acc.deactivate_staff(deactivated_by=self.admin_user, staff_id=self.nurse.pk)
+        self.client.force_login(self.admin_user)
+        self.assertContains(self.client.get(reverse("roster")), "cmq-chip-inactive")

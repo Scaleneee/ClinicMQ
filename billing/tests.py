@@ -293,3 +293,21 @@ class VoidPageTests(BillingTestCase):
         bill = self.bill()
         self.client.force_login(self.nurse.user)
         self.assertEqual(self.client.post(f"/billing/{bill.pk}/void/", {"reason": "x"}).status_code, 403)
+
+
+class ReceiptTests(BillingTestCase):
+    def test_receipt_for_paid_bill_only(self):
+        siti = User.objects.create_user(username="siti@x.my", email="siti@x.my", password="x", role="PATIENT")
+        bill = self.bill(items=[(self.para, 20), (self.syrup, 1)], user=siti)
+        self.client.force_login(self.nurse.user)
+        self.assertEqual(self.client.get(f"/billing/{bill.pk}/receipt.pdf").status_code, 404)
+        bs.record_payment(recorded_by=self.nurse.user, bill_id=bill.pk, method="CASH", amount_received="50")
+        self.assertContains(self.client.get(f"/billing/{bill.pk}/"), "Download receipt")
+        response = self.client.get(f"/billing/{bill.pk}/receipt.pdf?download=1")
+        self.assertEqual(response["Content-Type"], "application/pdf")
+        self.assertTrue(response.content.startswith(b"%PDF"))
+        self.assertIn('attachment; filename="Receipt-B-20261104-001.pdf"', response["Content-Disposition"])
+        self.client.force_login(siti)  # the patient can download their own receipt
+        self.assertEqual(self.client.get(f"/billing/{bill.pk}/receipt.pdf").status_code, 200)
+        self.client.force_login(self.doc.user)
+        self.assertEqual(self.client.get(f"/billing/{bill.pk}/receipt.pdf").status_code, 403)

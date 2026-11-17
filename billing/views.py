@@ -180,3 +180,24 @@ def bill_void(request, pk):
             messages.success(request, f"Bill {bill.bill_no} was voided.")
             return redirect("billing:bill_detail", pk=bill.pk)
     return render(request, "billing/bill_void.html", {"bill": bill, "form": form, "total": bill.total})
+
+
+# ---------------------------------------------------------------------------
+# PDF receipt (staff, or the patient the bill belongs to)
+# ---------------------------------------------------------------------------
+@login_required
+def receipt_pdf(request, pk):
+    from django.http import Http404, HttpResponse
+
+    from .receipt_pdf import build_receipt_pdf
+
+    bill = _bill_or_404(pk)
+    if not bs.can_view(request.user, bill):
+        raise PermissionDenied
+    if bill.status != Bill.Status.PAID:
+        raise Http404("A receipt is only available for paid bills.")
+
+    response = HttpResponse(build_receipt_pdf(bill), content_type="application/pdf")
+    disposition = "attachment" if request.GET.get("download") else "inline"
+    response["Content-Disposition"] = f'{disposition}; filename="Receipt-{bill.bill_no}.pdf"'
+    return response

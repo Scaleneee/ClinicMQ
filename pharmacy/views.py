@@ -12,7 +12,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from accounts.decorators import role_required
 
 from . import services as ps
-from .forms import MedicineForm
+from .forms import MedicineForm, RestockForm
 from .models import Medicine
 
 VIEW_ROLES = ("NURSE", "DOCTOR", "ADMIN")
@@ -106,3 +106,25 @@ def medicine_edit(request, pk):
             messages.success(request, f"{m.name} was updated.")
             return redirect("pharmacy:medicine_list")
     return _form_page(request, form, medicine)
+
+
+# ---------------------------------------------------------------------------
+# Restock (nurse)
+# ---------------------------------------------------------------------------
+@role_required("NURSE")
+def medicine_restock(request, pk):
+    medicine = _active_medicine(pk)
+    form = RestockForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        try:
+            m = ps.restock_medicine(restocked_by=request.user, medicine_id=medicine.pk, **form.cleaned_data)
+        except ValidationError as e:
+            _add_service_errors(form, e)
+        except PermissionDenied as e:
+            messages.error(request, str(e))
+        else:
+            messages.success(request, f"{m.name} restocked. Now {m.quantity} {m.unit} in stock.")
+            return redirect("pharmacy:medicine_list")
+    return render(request, "pharmacy/medicine_restock.html", {
+        "form": form, "medicine": medicine, "badges": ps.stock_badges(medicine),
+    })

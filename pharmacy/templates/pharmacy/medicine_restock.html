@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Restock · ClinicMQ{% endblock %}
+
+{% block content %}
+<div class="cmq-narrow">
+  <p class="cmq-eyebrow"><a href="{% url 'pharmacy:medicine_list' %}"><i class="bi bi-arrow-left"></i> Back</a></p>
+  <h1 class="cmq-title">Restock</h1>
+  <p class="cmq-subtitle mb-4">{{ medicine.name }}</p>
+
+  {% if form.errors %}
+    <div class="cmq-alert cmq-alert-error" role="alert">
+      <i class="bi bi-exclamation-circle"></i>
+      <div class="cmq-alert-body">
+        {% for error in form.non_field_errors %}{{ error }} {% empty %}Please fix the fields marked in red.{% endfor %}
+      </div>
+    </div>
+  {% endif %}
+
+  <form method="post" novalidate class="cmq-card">
+    {% csrf_token %}
+    <dl class="cmq-details mb-4">
+      <dt>Current stock</dt>
+      <dd>
+        {{ medicine.quantity }} {{ medicine.unit }}
+        {% for label, style in badges %}{% include "_status_badge.html" with label=label style=style %}{% endfor %}
+      </dd>
+      <dt>Current expiry</dt><dd>{{ medicine.expiry_date|date:"j M Y" }}</dd>
+    </dl>
+    {% include "_field.html" with field=form.add_quantity %}
+    {% include "_field.html" with field=form.expiry_date optional=True %}
+    <div class="d-flex gap-2 justify-content-end">
+      <a class="btn btn-secondary" href="{% url 'pharmacy:medicine_list' %}">Cancel</a>
+      <button type="submit" class="btn btn-success"><i class="bi bi-box-seam"></i> Restock</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

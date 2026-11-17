@@ -249,3 +249,16 @@ class MedicineFormPageTests(PharmacyTestCase):
     def test_doctor_cannot_add(self):
         self.client.force_login(self.doc.user)
         self.assertEqual(self.client.get("/pharmacy/new/").status_code, 403)
+
+
+class RestockPageTests(PharmacyTestCase):
+    def test_restock_page(self):
+        self.client.force_login(self.nurse.user)
+        url = f"/pharmacy/{self.syrup.pk}/restock/"
+        self.assertContains(self.client.get(url), "5 bottles")
+        self.assertRedirects(self.client.post(url, {"add_quantity": "30", "expiry_date": ""}), "/pharmacy/")
+        self.syrup.refresh_from_db()
+        self.assertEqual(self.syrup.quantity, 35)
+        page = self.client.post(url, {"add_quantity": "0", "expiry_date": TODAY.isoformat()})
+        self.assertContains(page, "Enter how many to add")
+        self.assertContains(page, "Expiry date must be in the future.")

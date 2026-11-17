@@ -10,13 +10,18 @@
       </button>
 
       <div class="collapse navbar-collapse" id="cmqNav">
-        {# Role menus (UI.md §4) are added here as each module's pages are built. #}
+        {# Role menus from UI.md §4. Links to pages not built yet show as "Coming soon". #}
         <ul class="navbar-nav mx-auto gap-lg-3">
-          <li class="nav-item">
-            <a class="nav-link {% if url_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}">
-              <i class="bi bi-grid"></i> Dashboard
-            </a>
-          </li>
+          {% if user.role == "PATIENT" %}
+            {% include "_nav_link.html" with name="dashboard" icon="house" label="Home" %}
+            {% include "_nav_link.html" with name="queueing:get_number" icon="plus-circle" label="Get number" %}
+            {% include "_nav_link.html" with name="queueing:my_queue" icon="ticket-perforated" label="My queue" %}
+            {% include "_nav_link.html" with name="consultation:my_visits" icon="clock-history" label="My visits" %}
+            {% include "_nav_link.html" with name="billing:my_bills" icon="receipt" label="My bills" %}
+            {% include "_nav_link.html" with name="patients:my_profile" icon="person" label="Profile" %}
+          {% else %}
+            {% include "_nav_link.html" with name="dashboard" icon="grid" label="Dashboard" %}
+          {% endif %}
         </ul>
 
         <div class="dropdown">

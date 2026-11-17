@@ -1,0 +1,17 @@
+{% comment %}
+  One navbar link. If the URL name doesn't exist yet, it shows greyed out as "Coming soon".
+  Usage: {% include "_nav_link.html" with name="queueing:my_queue" icon="ticket-perforated" label="My queue" %}
+{% endcomment %}
+{% url name as href %}
+<li class="nav-item">
+  {% if href %}
+    <a class="nav-link {% if request.path == href %}active{% endif %}" href="{{ href }}"
+       {% if request.path == href %}aria-current="page"{% endif %}>
+      <i class="bi bi-{{ icon }}"></i> {{ label }}
+    </a>
+  {% else %}
+    <span class="nav-link disabled cmq-soon" aria-disabled="true" title="Coming soon">
+      <i class="bi bi-{{ icon }}"></i> {{ label }}
+    </span>
+  {% endif %}
+</li>

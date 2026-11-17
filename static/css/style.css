@@ -353,3 +353,36 @@ a:hover { color: var(--cmq-ink-soft); }
 .cmq-alert-warning { border-left-color: var(--cmq-yellow); background: var(--cmq-yellow-wash); }
 .cmq-alert-warning .bi { color: #8a6800; }
 .cmq-alert-info { border-left-color: var(--cmq-ink); background: var(--cmq-wash); }
+
+/* ---------- Status badge (UI.md §3): pill with a dot and a text label ---------- */
+.cmq-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 12px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 15px;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+.cmq-badge-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+.cmq-badge-waiting { background: var(--cmq-yellow-wash); color: #7a5c00; }
+.cmq-badge-checked-in { background: var(--cmq-green-wash); color: var(--cmq-green); }
+.cmq-badge-skipped { border-color: var(--cmq-yellow); color: #7a5c00; }
+.cmq-badge-called { background: var(--cmq-red); color: #fff; animation: cmq-pulse 1.4s ease-in-out infinite; }
+.cmq-badge-with-doctor { background: var(--cmq-ink); color: #fff; }
+.cmq-badge-completed { background: var(--cmq-line); color: var(--cmq-ink-soft); }
+.cmq-badge-missed { border-color: var(--cmq-red); color: var(--cmq-red); }
+.cmq-badge-closed { border-color: var(--cmq-line); color: var(--cmq-muted); }
+
+@keyframes cmq-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(192, 57, 43, 0.45); }
+  50% { box-shadow: 0 0 0 8px rgba(192, 57, 43, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cmq-badge-called { animation: none; }
+}
+
+/* Links to pages that aren't built yet */
+.cmq-navbar .nav-link.cmq-soon { color: #b5b5b5; cursor: default; }

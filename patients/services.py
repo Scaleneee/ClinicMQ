@@ -7,8 +7,11 @@ This includes creating, updating, and deleting patient records, as well as any o
 import re
 from datetime import date
 
-from django.core.exceptions import ValidationError, PermissionDenied
+from django.contrib.auth import get_user_model
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import IntegrityError, transaction
+from django.db.models import Q
 from django.utils import timezone
 
 from .models import Patient
@@ -146,6 +149,24 @@ def validate_patient_data(*, ic_no, full_name, gender, date_of_birth,
         raise ValidationError(errors)
 
 # ------------------------------------------------
+# Helpers the nurse screen will need
+# ------------------------------------------------
+def find_patient_by_id(ic_no: str) -> Patient | None:
+    """
+    Check before registering
+    """ 
+    return Patient.objects.filter(ic_no=normalize_ic(ic_no)).first()
+
+def prefill_from_ic(ic_no: str) -> dict:
+    """
+    Auto-fill date_of_birth and gender once the nurse type the IC
+    """
+    ic_no = normalize_ic(ic_no)
+    if not IC_PATTERN.match(ic_no): 
+        return {}
+    return {"date_of_birth": bday_from_ic(ic_no), "gender": gender_from_ic(ic_no)}
+
+# ------------------------------------------------
 # Main use case: nurse registers a walk-in patient
 # ------------------------------------------------
 # registerd_by: User
@@ -192,19 +213,32 @@ def register_patient(*, registered_by, ic_no, full_name, gender, date_of_birth,
         raise ValidationError({"ic_no": "A patient with this IC is already registered."})
 
 # ------------------------------------------------
-# Helpers the nurse screen will need
+# Search patients (nurse, doctor, admin)
 # ------------------------------------------------
-def find_patient_by_id(ic_no: str) -> Patient | None:
+STAFF_ROLES = {"NURSE", "DOCTOR", "ADMIN"}
+def search_patients(*, searched_by, query: str, limit: int = 20):
     """
-    Check before registering
-    """ 
-    return Patient.objects.filter(ic_no=normalize_ic(ic_no)).first()
+    Search by IC, name or phone. Returns a QuerySet
+    """
+    if not searched_by.is_authenticated or searched_by.role not in STAFF_ROLES:
+        raise PermissionDenied("Only clinic staff can search patients.")
 
-def prefill_from_ic(ic_no: str) -> dict:
-    """
-    Auto-fill date_of_birth and gender once the nurse type the IC
-    """
-    ic_no = normalize_ic(ic_no)
-    if not IC_PATTERN.match(ic_no): 
-        return {}
-    return {"date_of_birth": bday_from_ic(ic_no), "gender": gender_from_ic(ic_no)}
+    query = (query or "").strip()
+    if len(query) < 2:
+        return Patient.objects.none()
+
+    ic = normalize_ic(query)
+    if IC_PATTERN.match(ic):
+        # return the patient obj match the ic
+        return Patient.objects.filter(ic_no = ic)
+
+    digits = re.sub(r"\D", "", query)
+    conditions = Q(full_name__icontains=query) | Q(ic_no__icontains=query)
+    if len(digits) >= 3:
+        phone_match = Q(phone__icontains=digits[:3])
+        if len(digits) > 3:
+            phone_match &= Q(phone__icontains=digits[3:])
+        conditions != phone_match
+    return Patient.objects.filter(conditions).order_by("full_name")[:limit]
+
+    

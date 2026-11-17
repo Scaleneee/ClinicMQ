@@ -1,7 +1,12 @@
 {% if messages %}
-  <ul class="messages">
-    {% for message in messages %}
-      <li class="message {{ message.tags }}">{{ message }}</li>
-    {% endfor %}
-  </ul>
+  {% for message in messages %}
+    <div class="cmq-alert cmq-alert-{{ message.tags|default:'info' }} alert fade show" role="alert">
+      {% if 'success' in message.tags %}<i class="bi bi-check-circle"></i>
+      {% elif 'error' in message.tags %}<i class="bi bi-exclamation-circle"></i>
+      {% elif 'warning' in message.tags %}<i class="bi bi-exclamation-triangle"></i>
+      {% else %}<i class="bi bi-info-circle"></i>{% endif %}
+      <div class="cmq-alert-body">{{ message }}</div>
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Dismiss"></button>
+    </div>
+  {% endfor %}
 {% endif %}

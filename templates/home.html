@@ -1,9 +1,14 @@
 {% extends "base.html" %}
 
 {% block content %}
-  <h1>Welcome to ClinicMQ</h1>
-  <p>Clinic queue management system.</p>
-  {% if not user.is_authenticated %}
-    <p><a href="{% url 'login' %}">Log in</a> to continue.</p>
-  {% endif %}
+  <div class="cmq-narrow text-center py-5">
+    <p class="cmq-eyebrow">Clinic Management System with Online Queue</p>
+    <h1 class="cmq-title">Wait at home, not in the clinic.</h1>
+    <p class="cmq-subtitle mb-4">Take a queue number online and track your turn live on your phone.</p>
+    {% if user.is_authenticated %}
+      <a class="btn btn-primary btn-lg" href="{% url 'dashboard' %}">Go to dashboard</a>
+    {% else %}
+      <a class="btn btn-primary btn-lg" href="{% url 'login' %}">Log in</a>
+    {% endif %}
+  </div>
 {% endblock %}

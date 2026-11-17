@@ -262,3 +262,19 @@ class RestockPageTests(PharmacyTestCase):
         page = self.client.post(url, {"add_quantity": "0", "expiry_date": TODAY.isoformat()})
         self.assertContains(page, "Enter how many to add")
         self.assertContains(page, "Expiry date must be in the future.")
+
+
+class DeletePageTests(PharmacyTestCase):
+    def test_admin_deletes_and_sees_blocked_state(self):
+        self.visit([(self.para, 10)])
+        self.client.force_login(self.admin.user)
+        self.assertContains(self.client.get(f"/pharmacy/{self.para.pk}/delete/"), "Used in prescriptions.")
+        self.client.post(f"/pharmacy/{self.para.pk}/delete/")
+        self.assertTrue(Medicine.objects.filter(pk=self.para.pk).exists())
+        self.assertContains(self.client.get(f"/pharmacy/{self.syrup.pk}/delete/"), "Delete Cough syrup 100ml?")
+        self.assertRedirects(self.client.post(f"/pharmacy/{self.syrup.pk}/delete/"), "/pharmacy/")
+        self.assertFalse(Medicine.objects.filter(pk=self.syrup.pk).exists())
+
+    def test_nurse_cannot_delete(self):
+        self.client.force_login(self.nurse.user)
+        self.assertEqual(self.client.post(f"/pharmacy/{self.syrup.pk}/delete/").status_code, 403)

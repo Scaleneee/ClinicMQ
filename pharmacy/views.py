@@ -128,3 +128,22 @@ def medicine_restock(request, pk):
     return render(request, "pharmacy/medicine_restock.html", {
         "form": form, "medicine": medicine, "badges": ps.stock_badges(medicine),
     })
+
+
+# ---------------------------------------------------------------------------
+# Delete (admin) - blocked once the medicine was prescribed
+# ---------------------------------------------------------------------------
+@role_required("ADMIN")
+def medicine_delete(request, pk):
+    medicine = _active_medicine(pk)
+    if request.method == "POST":
+        try:
+            name = ps.delete_medicine(deleted_by=request.user, medicine_id=medicine.pk)
+        except (ValidationError, PermissionDenied) as e:
+            messages.error(request, " ".join(getattr(e, "messages", [str(e)])))
+            return redirect("pharmacy:medicine_delete", pk=medicine.pk)
+        messages.success(request, f"{name} was deleted.")
+        return redirect("pharmacy:medicine_list")
+    return render(request, "pharmacy/medicine_confirm_delete.html", {
+        "medicine": medicine, "blocked": ps.delete_blocked_reason(medicine),
+    })

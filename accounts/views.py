@@ -2,10 +2,12 @@ from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth import views as auth_views
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.shortcuts import redirect, render
+from django.utils import timezone
 
 from patients.services import register_patient_account
+from queueing.services import get_todays_ticket, people_ahead
 
 from .forms import LoginForm, RegisterForm
 
@@ -77,6 +79,37 @@ def register(request):
     return render(request, "registration/register.html", {"form": form})
 
 
+def _greeting():
+    hour = timezone.localtime().hour
+    if hour < 12:
+        return "Good morning"
+    if hour < 18:
+        return "Good afternoon"
+    return "Good evening"
+
+
+def _patient_home(request):
+    """Patient home (UI.md §5.2): greeting, today's ticket or an empty state, quick links."""
+    try:
+        patient = request.user.patient
+    except ObjectDoesNotExist:
+        patient = None  # PATIENT account without a Patient record
+
+    ticket = get_todays_ticket(patient)
+    return render(request, "accounts/patient_home.html", {
+        "greeting": _greeting(),
+        # Names are stored in capitals (as on the IC); show them in title case.
+        "name": patient.full_name.title() if patient else request.user.get_full_name(),
+        "patient": patient,
+        "ticket": ticket,
+        "ahead": people_ahead(ticket) if ticket else None,
+    })
+
+
 @login_required
 def dashboard(request):
+    """Home after login. Each role gets its own page (UI.md §5.2)."""
+    if request.user.role == request.user.Role.PATIENT:
+        return _patient_home(request)
+    # Nurse, doctor and admin dashboards come later.
     return render(request, "accounts/dashboard.html")

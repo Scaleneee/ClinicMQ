@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% load queue_tags %}
+
+{% block title %}Home · ClinicMQ{% endblock %}
+
+{% block content %}
+<div class="cmq-narrow">
+
+  {# Page header #}
+  <p class="cmq-eyebrow">{% now "l, j F Y" %}</p>
+  <h1 class="cmq-title">{{ greeting }}, {{ name }}</h1>
+  <p class="cmq-subtitle mb-4">Take a number and track your turn from your phone.</p>
+
+  {% if not patient %}
+    <div class="cmq-alert cmq-alert-warning" role="alert">
+      <i class="bi bi-exclamation-triangle"></i>
+      <div class="cmq-alert-body">Your account isn't linked to a patient record yet. Please ask at the clinic counter.</div>
+    </div>
+
+  {% elif ticket %}
+    {# Today's ticket #}
+    <section class="cmq-card cmq-ticket" aria-label="Your queue number">
+      <p class="cmq-eyebrow mb-1">Your number</p>
+      <div class="cmq-ticket-no">{{ ticket.queue_no|queue_no }}</div>
+      <div class="mb-2">{% status_badge ticket.status %}</div>
+      <p class="cmq-muted mb-4">
+        {{ ticket.get_session_display }} session{% if ticket.doctor %} · Dr. {{ ticket.doctor.full_name }}{% endif %}
+      </p>
+
+      <div class="cmq-ticket-stat">
+        <span class="cmq-muted">People ahead of you</span>
+        <strong>{% if ahead is None %}–{% else %}{{ ahead }}{% endif %}</strong>
+      </div>
+
+      {% include "_action_link.html" with name="queueing:my_queue" label="View my queue" icon="arrow-right" css="btn btn-primary btn-lg w-100" %}
+    </section>
+
+  {% else %}
+    {# No ticket today: empty state #}
+    <section class="cmq-card cmq-empty">
+      <i class="bi bi-ticket-perforated cmq-empty-icon" aria-hidden="true"></i>
+      <p class="mb-3">You don't have a queue number today.</p>
+      {% include "_action_link.html" with name="queueing:get_number" label="Get queue number" icon="plus-lg" css="btn btn-primary btn-lg w-100" %}
+    </section>
+  {% endif %}
+
+  {# Quick links #}
+  <nav class="cmq-link-list mt-4" aria-label="More">
+    {% url "consultation:my_visits" as visits_url %}
+    {% url "billing:my_bills" as bills_url %}
+    {% include "accounts/_home_link.html" with href=visits_url icon="clock-history" label="My visits" hint="Diagnoses, medicines and MCs" %}
+    {% include "accounts/_home_link.html" with href=bills_url icon="receipt" label="My bills" hint="Bills and receipts" %}
+  </nav>
+
+</div>
+{% endblock %}

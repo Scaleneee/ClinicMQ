@@ -1,0 +1,13 @@
+{% comment %}
+  A button-style link. If the URL name doesn't exist yet, it shows greyed out with "Coming soon".
+  Usage: {% include "_action_link.html" with name="queueing:my_queue" label="View my queue" icon="arrow-right" css="btn btn-primary btn-lg w-100" %}
+{% endcomment %}
+{% url name as href %}
+{% if href %}
+  <a class="{{ css }}" href="{{ href }}">{% if icon %}<i class="bi bi-{{ icon }}"></i> {% endif %}{{ label }}</a>
+{% else %}
+  <span class="{{ css }} disabled" aria-disabled="true" title="Coming soon">
+    {% if icon %}<i class="bi bi-{{ icon }}"></i> {% endif %}{{ label }}
+  </span>
+  <div class="cmq-hint text-center">Coming soon</div>
+{% endif %}

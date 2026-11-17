@@ -1,0 +1,13 @@
+{% if href %}
+  <a class="cmq-link-row" href="{{ href }}">
+    <i class="bi bi-{{ icon }}" aria-hidden="true"></i>
+    <span class="cmq-link-text"><strong>{{ label }}</strong><span class="cmq-muted">{{ hint }}</span></span>
+    <i class="bi bi-chevron-right cmq-muted" aria-hidden="true"></i>
+  </a>
+{% else %}
+  <div class="cmq-link-row is-soon" aria-disabled="true">
+    <i class="bi bi-{{ icon }}" aria-hidden="true"></i>
+    <span class="cmq-link-text"><strong>{{ label }}</strong><span class="cmq-muted">{{ hint }}</span></span>
+    <span class="cmq-soon-tag">Coming soon</span>
+  </div>
+{% endif %}

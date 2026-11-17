@@ -386,3 +386,53 @@ a:hover { color: var(--cmq-ink-soft); }
 
 /* Links to pages that aren't built yet */
 .cmq-navbar .nav-link.cmq-soon { color: #b5b5b5; cursor: default; }
+
+/* ---------- Patient home ---------- */
+.cmq-ticket { text-align: center; padding: 28px 24px; }
+.cmq-ticket-no {
+  font-size: 72px;
+  line-height: 1;
+  margin: 4px 0 16px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 2px;
+}
+.cmq-ticket-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 14px 0;
+  margin-bottom: 20px;
+  border-top: 1px solid var(--cmq-line);
+  border-bottom: 1px solid var(--cmq-line);
+  text-align: left;
+}
+.cmq-ticket-stat strong { font-size: 28px; font-weight: 400; }
+
+.cmq-empty { text-align: center; padding: 32px 24px; background: var(--cmq-wash); }
+.cmq-empty-icon { display: block; font-size: 32px; color: var(--cmq-muted); margin-bottom: 8px; }
+
+.cmq-link-list { border: 1px solid var(--cmq-line); border-radius: var(--cmq-radius); overflow: hidden; }
+.cmq-link-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  color: var(--cmq-ink);
+  text-decoration: none;
+  background: var(--cmq-paper);
+}
+.cmq-link-row + .cmq-link-row { border-top: 1px solid var(--cmq-line); }
+a.cmq-link-row:hover { background: var(--cmq-wash); color: var(--cmq-ink); }
+.cmq-link-row > .bi:first-child { font-size: 20px; }
+.cmq-link-text { flex: 1; display: flex; flex-direction: column; line-height: 1.3; }
+.cmq-link-text .cmq-muted { font-size: 15px; }
+.cmq-link-row.is-soon { color: #9a9a9a; }
+.cmq-link-row.is-soon .cmq-muted { color: #b5b5b5 !important; }
+.cmq-soon-tag {
+  font-size: 13px;
+  color: var(--cmq-muted);
+  border: 1px solid var(--cmq-line);
+  border-radius: 999px;
+  padding: 1px 10px;
+  white-space: nowrap;
+}

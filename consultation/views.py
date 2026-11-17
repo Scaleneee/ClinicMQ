@@ -4,6 +4,8 @@ Consultation Record screens (UI.md §5.6). Views stay thin: they call consultati
 """
 
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.http import Http404
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
@@ -214,3 +216,26 @@ def consultation_delete(request, pk):
     return render(request, "consultation/consultation_confirm_delete.html", {
         "c": c, "mc": cs.get_mc(c), "blocked": blocked,
     })
+
+
+# ---------------------------------------------------------------------------
+# Medical certificate PDF (staff, or the patient it belongs to)
+# ---------------------------------------------------------------------------
+@login_required
+def mc_pdf(request, pk):
+    from django.http import HttpResponse
+
+    from .mc_pdf import build_mc_pdf
+
+    c = get_object_or_404(Consultation.objects.select_related("ticket__patient", "doctor"), pk=pk)
+    is_owner = request.user.role == "PATIENT" and c.ticket.patient.user_id == request.user.id
+    if request.user.role not in VIEW_ROLES and not is_owner:
+        raise PermissionDenied
+    mc = cs.get_mc(c)
+    if mc is None:
+        raise Http404("No MC was issued for this consultation.")
+
+    response = HttpResponse(build_mc_pdf(mc), content_type="application/pdf")
+    disposition = "attachment" if request.GET.get("download") else "inline"
+    response["Content-Disposition"] = f'{disposition}; filename="{mc.mc_no}.pdf"'
+    return response

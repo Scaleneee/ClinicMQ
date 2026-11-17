@@ -303,3 +303,38 @@ class DeleteScreenTests(ConsultationTestCase):
         c, _ = self.create()
         self.client.force_login(self.nurse.user)
         self.assertEqual(self.client.get(reverse("consultation:delete", args=[c.pk])).status_code, 403)
+
+
+class McPdfTests(ConsultationTestCase):
+    def setUp(self):
+        super().setUp()
+        self.c, _ = self.create(mc={"start_date": TODAY, "days": 2, "reason": "Viral fever"})
+
+    def test_staff_get_pdf(self):
+        self.client.force_login(self.nurse.user)
+        r = self.client.get(reverse("consultation:mc_pdf", args=[self.c.pk]))
+        self.assertEqual(r["Content-Type"], "application/pdf")
+        self.assertTrue(r.content.startswith(b"%PDF"))
+        self.assertIn('filename="MC-20261104-001.pdf"', r["Content-Disposition"])
+        self.assertIn(b"MC-20261104-001", r.content)   # title metadata
+        r = self.client.get(reverse("consultation:mc_pdf", args=[self.c.pk]) + "?download=1")
+        self.assertTrue(r["Content-Disposition"].startswith("attachment"))
+
+    def test_patient_gets_only_own_mc(self):
+        owner = User.objects.create_user(username="siti@x.my", email="siti@x.my", password="x", role="PATIENT")
+        self.patient.user = owner
+        self.patient.save()
+        other = User.objects.create_user(username="raj@x.my", email="raj@x.my", password="x", role="PATIENT")
+        self.client.force_login(owner)
+        self.assertEqual(self.client.get(reverse("consultation:mc_pdf", args=[self.c.pk])).status_code, 200)
+        self.assertContains(self.client.get(reverse("patients:my_visits")),
+                            reverse("consultation:mc_pdf", args=[self.c.pk]))
+        self.client.force_login(other)
+        self.assertEqual(self.client.get(reverse("consultation:mc_pdf", args=[self.c.pk])).status_code, 403)
+
+    def test_no_mc_is_404(self):
+        cs.update_consultation(doctor_user=self.doc.user, consultation_id=self.c.pk, symptoms="x", diagnosis="y",
+                               consult_fee="30", items=[{"medicine": self.para.pk, "dosage": "2 tabs, 3 times a day",
+                                                         "quantity": 20}], mc=None)
+        self.client.force_login(self.nurse.user)
+        self.assertEqual(self.client.get(reverse("consultation:mc_pdf", args=[self.c.pk])).status_code, 404)

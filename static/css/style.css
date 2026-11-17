@@ -572,3 +572,46 @@ a.cmq-link-row:hover { background: var(--cmq-wash); color: var(--cmq-ink); }
 .cmq-next-list li { display: flex; align-items: baseline; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--cmq-line); }
 .cmq-next-list li:last-child { border-bottom: 0; }
 .cmq-next-no { font-size: 22px; min-width: 48px; }
+
+/* ---------- TV board (waiting-room screen, designed for 1920×1080) ---------- */
+body.cmq-tv { height: 100vh; overflow: hidden; }
+.cmq-tv main { display: flex; flex-direction: column; height: 100vh; }
+.cmq-tv-top {
+  display: flex; align-items: center; justify-content: space-between; gap: 24px;
+  padding: 2vh 3vw; border-bottom: 1px solid var(--cmq-line); font-size: clamp(18px, 2.2vw, 40px);
+}
+.cmq-tv-top .cmq-wordmark { font-size: clamp(24px, 2.6vw, 48px); }
+.cmq-tv-session { color: var(--cmq-ink-soft); }
+.cmq-tv-clock { font-variant-numeric: tabular-nums; }
+.cmq-tv-body {
+  flex: 1; display: grid; grid-template-columns: 3fr 2fr; grid-template-rows: 1fr auto; min-height: 0;
+}
+.cmq-tv-label { font-size: clamp(18px, 2vw, 36px); color: var(--cmq-muted); }
+.cmq-tv-now {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  border-right: 1px solid var(--cmq-line); padding: 2vh 2vw;
+}
+.cmq-tv-number { font-size: clamp(120px, 18vw, 350px); line-height: 1; letter-spacing: 0.04em; }
+.cmq-tv-call { font-size: clamp(18px, 2.2vw, 40px); margin-top: 1vh; }
+.cmq-tv-call.is-muted { color: var(--cmq-muted); }
+.cmq-tv-now.is-called .cmq-tv-number { color: var(--cmq-red); animation: cmq-tv-flash 1.2s ease-in-out infinite; }
+.cmq-tv-now.is-called .cmq-tv-call { color: var(--cmq-red); }
+@keyframes cmq-tv-flash { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+@media (prefers-reduced-motion: reduce) { .cmq-tv-now.is-called .cmq-tv-number { animation: none; } }
+.cmq-tv-next { padding: 4vh 3vw; overflow: hidden; }
+.cmq-tv-next ol { list-style: none; padding: 0; margin: 2vh 0 0; }
+.cmq-tv-next li {
+  display: flex; justify-content: space-between; align-items: baseline;
+  font-size: clamp(28px, 4vw, 76px); padding: 0.6vh 0; border-bottom: 1px solid var(--cmq-line);
+}
+.cmq-tv-next li .cmq-muted { font-size: 0.5em; }
+.cmq-tv-bottom {
+  grid-column: 1 / -1; display: flex; align-items: center; gap: 2vw;
+  padding: 1.5vh 3vw; border-top: 1px solid var(--cmq-line); background: var(--cmq-wash);
+  font-size: clamp(16px, 1.6vw, 30px);
+}
+.cmq-tv-qr { width: clamp(90px, 9vw, 170px); height: clamp(90px, 9vw, 170px); background: #fff; flex-shrink: 0; }
+.cmq-tv-qr svg { width: 100%; height: 100%; }
+.cmq-tv-checkin { font-size: 1.15em; }
+.cmq-tv-waiting { white-space: nowrap; font-size: 1.2em; }
+.cmq-tv-waiting strong { font-size: 1.6em; font-weight: 400; }

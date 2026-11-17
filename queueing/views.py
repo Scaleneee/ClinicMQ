@@ -329,3 +329,30 @@ def console_action(request, action):
     ticket_id = request.POST.get("ticket")
     _run(request, lambda: call(request, int(ticket_id) if ticket_id and ticket_id.isdigit() else None), success)
     return redirect("queueing:console")
+
+
+# ---------------------------------------------------------------------------
+# TV board (waiting-room screen). Numbers only, never names.
+# Staff login required: it shows today's check-in QR.
+# ---------------------------------------------------------------------------
+def _tv_context(request):
+    o = q.queue_overview()
+    return {
+        "o": o,
+        "line": list(q.waiting_line(o["date"], o["session"]).values_list("queue_no", flat=True)[:6]),
+        "checkin_url": request.build_absolute_uri(
+            reverse("queueing:qr_check_in", args=[q.checkin_code(o["date"])])
+        ),
+    }
+
+
+@role_required(*STAFF_ROLES)
+def tv(request):
+    q.run_housekeeping()
+    return render(request, "queueing/tv.html", _tv_context(request))
+
+
+@role_required(*STAFF_ROLES)
+def tv_live(request):
+    q.run_housekeeping()
+    return render(request, "queueing/_tv_live.html", _tv_context(request))

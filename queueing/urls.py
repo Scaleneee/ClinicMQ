@@ -25,4 +25,7 @@ urlpatterns = [
     path("console/", views.console, name="console"),
     path("console/live/", views.console_live, name="console_live"),
     path("console/<str:action>/", views.console_action, name="console_action"),
+    # TV board
+    path("tv/", views.tv, name="tv"),
+    path("tv/live/", views.tv_live, name="tv_live"),
 ]

@@ -1,0 +1,35 @@
+{% load queue_tags humanize %}
+{# TV body: refreshes every 5 seconds. Numbers only, never names. #}
+<div id="tv-live" class="cmq-tv-body"
+     hx-get="{% url 'queueing:tv_live' %}" hx-trigger="every 5s" hx-swap="outerHTML">
+
+  <section class="cmq-tv-now {% if o.now_serving.status == 'CALLED' %}is-called{% endif %}">
+    <div class="cmq-tv-label">Now serving</div>
+    <div class="cmq-tv-number">{% if o.now_serving %}{{ o.now_serving.queue_no|queue_no }}{% else %}–{% endif %}</div>
+    {% if o.now_serving.status == "CALLED" %}
+      <div class="cmq-tv-call">Please go to the consultation room</div>
+    {% elif not o.is_open %}
+      <div class="cmq-tv-call is-muted">The clinic is closed now</div>
+    {% endif %}
+  </section>
+
+  <section class="cmq-tv-next">
+    <div class="cmq-tv-label">Next in line</div>
+    <ol>
+      {% for no in line %}
+        <li><span class="cmq-muted">{{ forloop.counter|ordinal }}</span><span>{{ no|queue_no }}</span></li>
+      {% empty %}
+        <li class="cmq-muted">No one waiting</li>
+      {% endfor %}
+    </ol>
+  </section>
+
+  <footer class="cmq-tv-bottom">
+    <div class="cmq-tv-qr" aria-label="Check-in QR code">{{ checkin_url|qr_svg }}</div>
+    <div class="flex-fill">
+      <div class="cmq-tv-checkin">Check in at the counter or scan the QR code</div>
+      <div class="cmq-muted">Log in to ClinicMQ on your phone, then scan.</div>
+    </div>
+    <div class="cmq-tv-waiting"><strong>{{ o.waiting }}</strong> waiting</div>
+  </footer>
+</div>

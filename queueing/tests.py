@@ -457,3 +457,29 @@ class DoctorConsoleTests(ScreenTestCase):
         self.patient(1)
         self.login(self.users[1])
         self.assertEqual(self.client.get(reverse("queueing:console")).status_code, 403)
+
+
+class TvBoardTests(ScreenTestCase):
+    def test_numbers_only_and_daily_qr(self):
+        a = self.check_in(self.take(1, now=at(9, 30)), at(9, 40))
+        self.check_in(self.take(2, now=at(9, 31)), at(9, 41))
+        q.call_next(called_by=self.nurse, now=at(9, 59))
+        self.login(self.nurse)
+        page = self.client.get(reverse("queueing:tv"))
+        html = page.content.decode()
+        self.assertContains(page, "Now serving")
+        self.assertIn("001", html)                  # called number
+        self.assertIn("002", html)                  # next in line
+        self.assertIn("is-called", html)            # pulses red while called
+        self.assertNotIn("P1", html)                # never names
+        self.assertNotIn("P2", html)
+        self.assertTrue(page.context["checkin_url"].endswith(
+            reverse("queueing:qr_check_in", args=[q.checkin_code(DAY)])))  # today's code
+        self.assertIn("<svg", html)                 # check-in QR
+        self.assertNotIn("cmq-navbar", html)        # full screen, no navbar
+
+    def test_tv_needs_staff_login(self):
+        self.assertEqual(self.client.get(reverse("queueing:tv")).status_code, 302)   # to login
+        self.patient(1)
+        self.login(self.users[1])
+        self.assertEqual(self.client.get(reverse("queueing:tv")).status_code, 403)

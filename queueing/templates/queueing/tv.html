@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}TV board · ClinicMQ{% endblock %}
+{% block body_class %}cmq-tv{% endblock %}
+{% block navbar %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block main %}
+  <header class="cmq-tv-top">
+    <span class="cmq-wordmark">ClinicMQ</span>
+    <span class="cmq-tv-session" id="tv-session">
+      {{ o.session_label }} session{% if o.doctor %} · Dr. {{ o.doctor.full_name }}{% endif %}
+    </span>
+    <span class="cmq-tv-clock" id="tv-clock">{% now "g:i A" %}</span>
+  </header>
+
+  {% include "queueing/_tv_live.html" %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Wall clock, updated every second.
+  (function () {
+    var el = document.getElementById("tv-clock");
+    function tick() {
+      el.textContent = new Date().toLocaleTimeString("en-MY", { hour: "numeric", minute: "2-digit" });
+    }
+    tick();
+    setInterval(tick, 1000);
+  })();
+</script>
+{% endblock %}

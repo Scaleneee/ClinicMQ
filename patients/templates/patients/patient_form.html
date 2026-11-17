@@ -8,7 +8,7 @@
     <div>
       <p class="cmq-eyebrow">
         {% if patient %}
-          <a href="{% url 'patients:detail' patient.pk %}"><i class="bi bi-arrow-left"></i> {{ patient.full_name|title }}</a>
+          <a href="{% url 'patients:detail' patient.pk %}"><i class="bi bi-arrow-left"></i> Back</a>
         {% elif back_to_walk_in %}
           <a href="{% url 'queueing:walk_in' %}"><i class="bi bi-arrow-left"></i> Walk-in</a>
         {% else %}

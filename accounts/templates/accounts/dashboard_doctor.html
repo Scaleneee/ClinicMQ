@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% load queue_tags %}
+
+{% block title %}Dashboard · ClinicMQ{% endblock %}
+
+{% block content %}
+  <div class="cmq-page-header">
+    <div>
+      <p class="cmq-eyebrow">{% now "l, j F Y" %}</p>
+      <h1 class="cmq-title">Welcome, Dr. {{ name }}</h1>
+      <p class="cmq-subtitle">
+        {% if on_duty %}You're on duty this {{ o.session_label|lower }} session.
+        {% elif o.is_open %}{{ o.session_label }} session · {% if o.doctor %}Dr. {{ o.doctor.full_name }} is on duty{% else %}no doctor on duty{% endif %}.
+        {% else %}The clinic is closed now.{% endif %}
+      </p>
+    </div>
+    <div class="cmq-page-actions">
+      <a class="btn btn-primary btn-lg" href="{% url 'queueing:console' %}"><i class="bi bi-clipboard2-pulse"></i> Open doctor console</a>
+    </div>
+  </div>
+
+  {# Stat cards #}
+  <div class="cmq-stat-grid">
+    {% include "_stat_card.html" with label="Waiting" value=stats.waiting note="checked in, not called yet" icon="hourglass-split" name="queueing:console" %}
+    {% include "_stat_card.html" with label="Seen today" value=stats.seen note="completed visits" icon="check2-circle" name="consultation:list" %}
+    {% if stats.avg %}
+      {% include "_stat_card.html" with label="Avg. consult time" value=stats.avg|stringformat:"d min" note="your visits today" icon="stopwatch" %}
+    {% else %}
+      {% include "_stat_card.html" with label="Avg. consult time" value="–" note="no completed visits yet" icon="stopwatch" %}
+    {% endif %}
+    {% if stats.next_shift %}
+      {% if stats.next_shift.shift_date == o.date %}
+        {% include "_stat_card.html" with label="My next shift" value="Today" note=stats.next_shift.get_session_display icon="calendar-event" name="roster" %}
+      {% else %}
+        {% include "_stat_card.html" with label="My next shift" value=stats.next_shift.shift_date|date:"D j M" note=stats.next_shift.get_session_display icon="calendar-event" name="roster" %}
+      {% endif %}
+    {% else %}
+      {% include "_stat_card.html" with label="My next shift" value="–" note="none scheduled" icon="calendar-event" name="roster" %}
+    {% endif %}
+  </div>
+
+  {% if needs_notes %}
+    <div class="cmq-alert cmq-alert-warning" role="status">
+      <i class="bi bi-pencil-square"></i>
+      <div class="cmq-alert-body">
+        <strong>Visits waiting for your notes</strong>
+        <div class="d-flex flex-wrap gap-2 mt-2">
+          {% for t in needs_notes %}
+            <a class="btn btn-secondary btn-sm" href="{% url 'consultation:create' t.pk %}">{{ t.queue_no|queue_no }} · {{ t.patient.full_name|title }}</a>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
+  {# Recent consultations #}
+  <section class="cmq-card cmq-card-flush">
+    <div class="cmq-card-head">
+      <h2 class="cmq-section-title mb-0">My recent consultations</h2>
+      <a href="{% url 'consultation:list' %}">All consultations <i class="bi bi-chevron-right"></i></a>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="cmq-table">
+        <thead><tr><th>Date</th><th>No.</th><th>Patient</th><th>Diagnosis</th><th>MC</th><th></th></tr></thead>
+        <tbody>
+          {% for c in recent %}
+            <tr class="cmq-row-link" onclick="location.href='{% url 'consultation:detail' c.pk %}'">
+              <td>{{ c.created_at|date:"j M Y" }}</td>
+              <td class="cmq-no">{{ c.ticket.queue_no|queue_no }}</td>
+              <td>{{ c.ticket.patient.full_name|title }}</td>
+              <td><a href="{% url 'consultation:detail' c.pk %}">{{ c.diagnosis }}</a></td>
+              <td>{% if c.medical_certificate %}<span class="cmq-tag-mc">{{ c.medical_certificate.days }} day{{ c.medical_certificate.days|pluralize }}</span>{% else %}<span class="cmq-muted">–</span>{% endif %}</td>
+              <td class="text-end"><i class="bi bi-chevron-right cmq-muted"></i></td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6" class="cmq-empty-row"><i class="bi bi-journal-medical"></i>No consultations yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock %}

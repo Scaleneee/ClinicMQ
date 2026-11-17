@@ -435,7 +435,34 @@ class AdminDashboardTests(DashboardTestCase):
         stats = self.client.get(reverse("dashboard")).context["stats"]
         self.assertEqual((stats["unpaid"], stats["revenue_label"]), (1, "RM 0.00"))
 
-    def test_roles_get_their_own_dashboard(self):
+
+
+class DoctorDashboardTests(DashboardTestCase):
+    def test_doctor_dashboard(self):
         self.client.force_login(self.doc.user)
         page = self.client.get(reverse("dashboard"))
-        self.assertTemplateUsed(page, "accounts/dashboard.html")  # doctor: generic page for now
+        self.assertTemplateUsed(page, "accounts/dashboard_doctor.html")
+        self.assertContains(page, "Welcome, Dr. Aisyah Rahman")
+        self.assertContains(page, "on duty this morning session")
+        stats = page.context["stats"]
+        self.assertEqual((stats["waiting"], stats["seen"]), (3, 1))
+        self.assertEqual(stats["next_shift"].shift_date, TODAY)
+        self.assertContains(page, "Open doctor console")
+        self.assertContains(page, "Viral fever")                 # recent consultation
+        self.assertNotContains(page, "Visits waiting for your notes")
+
+    def test_reminder_for_visits_without_notes(self):
+        t = self.tickets[1]
+        q.call_next(called_by=self.nurse.user)
+        q.start_consultation(started_by=self.doc.user, ticket_id=t.pk)
+        self.client.force_login(self.doc.user)
+        page = self.client.get(reverse("dashboard"))
+        self.assertContains(page, "Visits waiting for your notes")
+        self.assertContains(page, reverse("consultation:create", args=[t.pk]))
+
+    def test_other_doctor_not_on_duty(self):
+        other = self.make_staff("Tan Wei Ming", "DOCTOR")
+        self.client.force_login(other.user)
+        page = self.client.get(reverse("dashboard"))
+        self.assertContains(page, "Dr. Aisyah Rahman is on duty")
+        self.assertEqual(page.context["stats"]["seen"], 0)

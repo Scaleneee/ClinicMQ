@@ -118,5 +118,6 @@ def dashboard(request):
         return dashboards.nurse_dashboard(request)
     if role == request.user.Role.ADMIN:
         return dashboards.admin_dashboard(request)
-    # Doctor dashboard: generic page for now.
+    if role == request.user.Role.DOCTOR:
+        return dashboards.doctor_dashboard(request)
     return render(request, "accounts/dashboard.html")

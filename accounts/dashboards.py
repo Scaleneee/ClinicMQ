@@ -143,3 +143,45 @@ def admin_dashboard(request):
         "week": week,
         "recent_bills": _with_totals(Bill.objects.order_by("-created_at")[:8]),
     })
+
+
+# ---------------------------------------------------------------------------
+# Doctor dashboard
+# ---------------------------------------------------------------------------
+def _avg_minutes(tickets):
+    minutes = [(t.completed_at - t.started_at).total_seconds() / 60 for t in tickets
+               if t.started_at and t.completed_at and t.completed_at > t.started_at]
+    return round(sum(minutes) / len(minutes)) if minutes else None
+
+
+def doctor_dashboard(request):
+    from consultation import services as cs
+    from consultation.models import Consultation
+
+    q.run_housekeeping()
+    o = q.queue_overview()
+    today = o["date"]
+    try:
+        staff = request.user.staff
+    except Exception:  # doctor login without a Staff record
+        staff = None
+
+    seen = list(QueueTicket.objects.filter(queue_date=today, status=QueueTicket.Status.COMPLETED, doctor=staff)) \
+        if staff else []
+    next_shift = acc.upcoming_shifts(staff, limit=1).first() if staff else None
+    recent = (Consultation.objects.filter(doctor=staff).select_related("ticket__patient")
+              .prefetch_related("medical_certificate").order_by("-created_at")[:8]) if staff else []
+
+    return render(request, "accounts/dashboard_doctor.html", {
+        "name": staff.full_name if staff else request.user.get_full_name(),
+        "o": o,
+        "on_duty": staff is not None and o["doctor"] is not None and o["doctor"].pk == staff.pk,
+        "stats": {
+            "waiting": o["waiting"],
+            "seen": len(seen),
+            "avg": _avg_minutes(seen),
+            "next_shift": next_shift,
+        },
+        "needs_notes": cs.visits_without_notes(doctor_user=request.user),
+        "recent": recent,
+    })

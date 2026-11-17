@@ -212,7 +212,7 @@ class MedicineListPageTests(PharmacyTestCase):
         page = self.client.get("/pharmacy/?filter=low")
         self.assertContains(page, "Cough syrup 100ml")
         self.assertNotContains(page, "Paracetamol 500mg")
-        for text in ("Low stock", "Expiring soon", "5 bottles"):
+        for text in ("Low stock", "Expiring soon", "5 bottles", "Add medicine"):
             self.assertContains(page, text)
 
     def test_doctor_views_without_actions_and_patient_is_refused(self):
@@ -224,3 +224,28 @@ class MedicineListPageTests(PharmacyTestCase):
         patient = User.objects.create_user(username="p@x.my", email="p@x.my", password="x", role="PATIENT")
         self.client.force_login(patient)
         self.assertEqual(self.client.get("/pharmacy/").status_code, 403)
+
+
+class MedicineFormPageTests(PharmacyTestCase):
+    def post(self, url, **kw):
+        d = self.data(**kw)
+        d["expiry_date"] = d["expiry_date"].isoformat()
+        return self.client.post(url, d)
+
+    def test_add_and_edit(self):
+        self.client.force_login(self.nurse.user)
+        self.assertRedirects(self.post("/pharmacy/new/"), "/pharmacy/")
+        m = Medicine.objects.get(name="Loratadine 10mg")
+        self.assertRedirects(self.post(f"/pharmacy/{m.pk}/edit/", unit_price="1.20"), "/pharmacy/")
+        m.refresh_from_db()
+        self.assertEqual(m.unit_price, Decimal("1.20"))
+
+    def test_errors_show_on_the_form(self):
+        self.client.force_login(self.nurse.user)
+        page = self.post("/pharmacy/new/", name="paracetamol 500MG", unit_price="0")
+        self.assertContains(page, "is already in the inventory")
+        self.assertContains(page, "Unit price must be more than RM 0.")
+
+    def test_doctor_cannot_add(self):
+        self.client.force_login(self.doc.user)
+        self.assertEqual(self.client.get("/pharmacy/new/").status_code, 403)

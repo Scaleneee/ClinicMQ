@@ -147,3 +147,47 @@ def medicine_delete(request, pk):
     return render(request, "pharmacy/medicine_confirm_delete.html", {
         "medicine": medicine, "blocked": ps.delete_blocked_reason(medicine),
     })
+
+
+# ---------------------------------------------------------------------------
+# Dispense (nurse)
+# ---------------------------------------------------------------------------
+@role_required("NURSE")
+def dispense_list(request):
+    visits = list(ps.pending_dispense().prefetch_related("prescription_items"))
+    for c in visits:
+        items = list(c.prescription_items.all())
+        c.waiting_count = sum(1 for i in items if not i.dispensed)
+        c.item_count = len(items)
+    return render(request, "pharmacy/dispense_list.html", {"visits": visits})
+
+
+@role_required("NURSE")
+def dispense_detail(request, consultation_id):
+    from consultation.models import Consultation
+
+    c = get_object_or_404(Consultation.objects.select_related("ticket__patient", "doctor"), pk=consultation_id)
+    if request.method == "POST":
+        try:
+            done = ps.dispense_items(dispensed_by=request.user, consultation_id=c.pk,
+                                     medicine_ids=request.POST.getlist("medicine"))
+        except (ValidationError, PermissionDenied) as e:
+            for message in getattr(e, "messages", [str(e)]):
+                messages.error(request, message)
+        else:
+            names = ", ".join(i.medicine.name for i in done)
+            messages.success(request, f"Dispensed {names}.")
+            if not c.prescription_items.filter(dispensed=False).exists():
+                return redirect("pharmacy:dispense_list")
+        return redirect("pharmacy:dispense_detail", consultation_id=c.pk)
+
+    items = list(c.prescription_items.select_related("medicine", "dispensed_by").order_by("medicine__name"))
+    for i in items:
+        i.problem = None if i.dispensed else ps.item_problem(i)
+    return render(request, "pharmacy/dispense_detail.html", {
+        "c": c,
+        "items": items,
+        "waiting": [i for i in items if not i.dispensed],
+        "can_dispense": any(not i.dispensed and not i.problem for i in items),
+        "completed": c.ticket.status == "COMPLETED",
+    })

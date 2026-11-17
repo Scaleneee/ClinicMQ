@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% load queue_tags %}
+
+{% block title %}Dispense · ClinicMQ{% endblock %}
+
+{% block content %}
+  <div class="cmq-page-header">
+    <div>
+      <p class="cmq-eyebrow">{% now "l, j F Y" %}</p>
+      <h1 class="cmq-title">Dispense</h1>
+      <p class="cmq-subtitle">Prescriptions from completed visits, oldest first.</p>
+    </div>
+    <div class="cmq-page-actions">
+      <a class="btn btn-secondary" href="{% url 'pharmacy:medicine_list' %}"><i class="bi bi-capsule"></i> Medicine</a>
+    </div>
+  </div>
+
+  <div class="cmq-table-wrap">
+    <table class="cmq-table">
+      <thead><tr><th>No.</th><th>Patient</th><th>Doctor</th><th>Items</th><th>Completed</th><th></th></tr></thead>
+      <tbody>
+        {% for c in visits %}
+          <tr>
+            <td class="cmq-no">{{ c.ticket.queue_no|queue_no }}</td>
+            <td>{{ c.ticket.patient.full_name|title }}<div class="cmq-muted" style="font-size:14px">{{ c.diagnosis }}</div></td>
+            <td>Dr. {{ c.doctor.full_name }}</td>
+            <td>{{ c.waiting_count }} to dispense{% if c.waiting_count != c.item_count %}<div class="cmq-muted" style="font-size:14px">of {{ c.item_count }}</div>{% endif %}</td>
+            <td class="text-nowrap">
+              {% if c.ticket.completed_at %}{{ c.ticket.completed_at|date:"j M" }}, {{ c.ticket.completed_at|time:"g:i A" }}{% else %}–{% endif %}
+            </td>
+            <td class="text-end"><a class="btn btn-success btn-sm" href="{% url 'pharmacy:dispense_detail' c.pk %}"><i class="bi bi-bag-check"></i> Dispense</a></td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6" class="cmq-empty-row"><i class="bi bi-bag-check"></i>Nothing to dispense.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}

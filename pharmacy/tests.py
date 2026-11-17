@@ -278,3 +278,33 @@ class DeletePageTests(PharmacyTestCase):
     def test_nurse_cannot_delete(self):
         self.client.force_login(self.nurse.user)
         self.assertEqual(self.client.post(f"/pharmacy/{self.syrup.pk}/delete/").status_code, 403)
+
+
+class DispensePageTests(PharmacyTestCase):
+    def test_list_and_dispense(self):
+        c = self.visit([(self.para, 20), (self.syrup, 2)])
+        self.client.force_login(self.nurse.user)
+        page = self.client.get("/pharmacy/dispense/")
+        self.assertContains(page, "Patient 1")
+        self.assertContains(page, "2 to dispense")
+        page = self.client.get(f"/pharmacy/dispense/{c.pk}/")
+        self.assertContains(page, "Mark as dispensed")
+        self.assertContains(page, "5 bottles")  # stock left
+        self.client.post(f"/pharmacy/dispense/{c.pk}/", {"medicine": [self.para.pk]})
+        self.assertContains(self.client.get(f"/pharmacy/dispense/{c.pk}/"), "Dispensed by Farah Lim")
+        self.assertRedirects(self.client.post(f"/pharmacy/dispense/{c.pk}/", {"medicine": [self.syrup.pk]}),
+                             "/pharmacy/dispense/")
+        self.assertContains(self.client.get("/pharmacy/dispense/"), "Nothing to dispense.")
+
+    def test_not_enough_stock_is_shown(self):
+        c = self.visit([(self.syrup, 2)])
+        Medicine.objects.filter(pk=self.syrup.pk).update(quantity=1)
+        self.client.force_login(self.nurse.user)
+        page = self.client.get(f"/pharmacy/dispense/{c.pk}/")
+        self.assertContains(page, "Not enough stock for Cough syrup 100ml (need 2, have 1).")
+
+    def test_only_nurses_dispense(self):
+        c = self.visit([(self.para, 20)])
+        self.client.force_login(self.doc.user)
+        self.assertEqual(self.client.get("/pharmacy/dispense/").status_code, 403)
+        self.assertEqual(self.client.post(f"/pharmacy/dispense/{c.pk}/").status_code, 403)

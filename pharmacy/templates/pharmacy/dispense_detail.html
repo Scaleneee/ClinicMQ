@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% load queue_tags %}
+
+{% block title %}Dispense {{ c.ticket.queue_no|queue_no }} · ClinicMQ{% endblock %}
+
+{% block content %}
+<div class="cmq-form-page">
+  <p class="cmq-eyebrow"><a href="{% url 'pharmacy:dispense_list' %}"><i class="bi bi-arrow-left"></i> Back</a></p>
+  <h1 class="cmq-title">Dispense</h1>
+
+  <div class="cmq-patient-strip">
+    <div class="cmq-ticket-no mb-0" style="font-size:36px">{{ c.ticket.queue_no|queue_no }}</div>
+    <div class="flex-fill">
+      <strong>{{ c.ticket.patient.full_name|title }}</strong>
+      <div class="cmq-muted">{{ c.diagnosis }} · Dr. {{ c.doctor.full_name }} · {{ c.created_at|date:"j M Y" }}</div>
+    </div>
+  </div>
+
+  {% if not completed %}
+    <div class="cmq-alert cmq-alert-warning" role="status">
+      <i class="bi bi-hourglass-split"></i>
+      <div class="cmq-alert-body">The patient is still with the doctor. Medicines are dispensed after the visit is completed.</div>
+    </div>
+  {% endif %}
+
+  <form method="post" class="cmq-card cmq-card-flush mb-4">
+    {% csrf_token %}
+    <div class="cmq-table-wrap border-0">
+      <table class="cmq-table">
+        <thead><tr><th style="width:44px"></th><th>Medicine</th><th>Dosage</th><th class="text-end">Qty</th><th class="text-end">Stock left</th></tr></thead>
+        <tbody>
+          {% for i in items %}
+            <tr class="{% if i.dispensed %}is-inactive{% endif %}">
+              <td>
+                {% if i.dispensed %}
+                  <i class="bi bi-check-lg" aria-label="Dispensed"></i>
+                {% else %}
+                  <label class="cmq-check">
+                    <input type="checkbox" name="medicine" value="{{ i.medicine_id }}"
+                           {% if i.problem or not completed %}disabled{% else %}checked{% endif %}>
+                    <span class="visually-hidden">Dispense {{ i.medicine.name }}</span>
+                  </label>
+                {% endif %}
+              </td>
+              <td>
+                {{ i.medicine.name }}
+                {% if i.dispensed %}
+                  <div class="cmq-muted" style="font-size:14px">
+                    Dispensed{% if i.dispensed_by %} by {{ i.dispensed_by.full_name }}{% endif %} · {{ i.dispensed_at|date:"j M" }}, {{ i.dispensed_at|time:"g:i A" }}
+                  </div>
+                {% elif i.problem %}
+                  <div class="cmq-error mt-1">{{ i.problem }}</div>
+                {% endif %}
+              </td>
+              <td>{{ i.dosage }}</td>
+              <td class="text-end text-nowrap">{{ i.quantity }} {{ i.medicine.unit }}</td>
+              <td class="text-end text-nowrap">{% if i.dispensed %}–{% else %}{{ i.medicine.quantity }} {{ i.medicine.unit }}{% endif %}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5" class="cmq-empty-row"><i class="bi bi-capsule"></i>No medicines were prescribed.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if waiting %}
+      <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center p-3 border-top">
+        <span class="cmq-hint mt-0">Stock goes down when you mark them as dispensed.</span>
+        <button type="submit" class="btn btn-success" {% if not can_dispense or not completed %}disabled{% endif %}>
+          <i class="bi bi-check2-circle"></i> Mark as dispensed
+        </button>
+      </div>
+    {% endif %}
+  </form>
+</div>
+{% endblock %}

@@ -17,7 +17,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from accounts.decorators import role_required
 
 from . import services as bs
-from .forms import PaymentForm
+from .forms import PaymentForm, VoidForm
 from .models import Bill
 
 STAFF_ROLES = ("NURSE", "ADMIN")
@@ -156,3 +156,27 @@ def bill_pay(request, pk):
                              + (f" Change: RM {change:,.2f}." if change else ""))
             return redirect("billing:bill_detail", pk=bill.pk)
     return render(request, "billing/bill_pay.html", {"bill": bill, "form": form, "total": bill.total})
+
+
+# ---------------------------------------------------------------------------
+# Delete: void a bill with a reason (admin)
+# ---------------------------------------------------------------------------
+@role_required("ADMIN")
+def bill_void(request, pk):
+    bill = _bill_or_404(pk)
+    if bill.status == Bill.Status.VOID:
+        messages.info(request, "This bill is already void.")
+        return redirect("billing:bill_detail", pk=bill.pk)
+
+    form = VoidForm(request.POST if request.method == "POST" else None)
+    if request.method == "POST" and form.is_valid():
+        try:
+            bill = bs.void_bill(voided_by=request.user, bill_id=bill.pk, reason=form.cleaned_data["reason"])
+        except ValidationError as e:
+            _add_service_errors(form, e)
+        except PermissionDenied as e:
+            messages.error(request, _error_text(e))
+        else:
+            messages.success(request, f"Bill {bill.bill_no} was voided.")
+            return redirect("billing:bill_detail", pk=bill.pk)
+    return render(request, "billing/bill_void.html", {"bill": bill, "form": form, "total": bill.total})

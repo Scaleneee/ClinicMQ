@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% load bill_tags %}
+
+{% block title %}Void bill · ClinicMQ{% endblock %}
+
+{% block content %}
+<div class="cmq-narrow">
+  <p class="cmq-eyebrow"><a href="{% url 'billing:bill_detail' bill.pk %}"><i class="bi bi-arrow-left"></i> Back</a></p>
+
+  <section class="cmq-card">
+    <div class="text-center">
+      <div class="cmq-auth-icon is-danger"><i class="bi bi-x-circle"></i></div>
+      <h1 class="cmq-auth-title mb-2">Void bill {{ bill.bill_no }}?</h1>
+      <p class="cmq-muted mb-4">
+        {{ bill.consultation.ticket.patient.full_name|title }} · {{ total|rm }} · {% bill_badge bill.status %}<br>
+        {% if bill.status == "PAID" %}It was already paid by {{ bill.get_payment_method_display|lower }}, so refund the patient. {% endif %}A void bill can't be paid or used again. This can't be undone.
+      </p>
+    </div>
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {% include "_field.html" with field=form.reason %}
+      <div class="d-flex gap-2 justify-content-end">
+        <a class="btn btn-secondary" href="{% url 'billing:bill_detail' bill.pk %}">Cancel</a>
+        <button type="submit" class="btn btn-outline-danger"><i class="bi bi-x-circle"></i> Void bill</button>
+      </div>
+    </form>
+  </section>
+</div>
+{% endblock %}

@@ -275,3 +275,21 @@ class PaymentPageTests(BillingTestCase):
         bill = self.bill()
         self.client.force_login(self.nurse.user)
         self.assertContains(self.client.post(f"/billing/{bill.pk}/pay/", {}), "Choose how the patient paid.")
+
+
+class VoidPageTests(BillingTestCase):
+    def test_admin_voids_with_reason(self):
+        bill = self.bill()
+        self.client.force_login(self.admin.user)
+        self.assertContains(self.client.post(f"/billing/{bill.pk}/void/", {"reason": ""}),
+                            "Enter the reason for voiding this bill.")
+        self.assertRedirects(self.client.post(f"/billing/{bill.pk}/void/", {"reason": "Wrong patient"}),
+                             f"/billing/{bill.pk}/")
+        page = self.client.get(f"/billing/{bill.pk}/")
+        self.assertContains(page, "This bill is void.")
+        self.assertContains(page, "Wrong patient")
+
+    def test_nurse_cannot_void(self):
+        bill = self.bill()
+        self.client.force_login(self.nurse.user)
+        self.assertEqual(self.client.post(f"/billing/{bill.pk}/void/", {"reason": "x"}).status_code, 403)

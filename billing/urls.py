@@ -9,4 +9,5 @@ urlpatterns = [
     path("<int:pk>/", views.bill_detail, name="bill_detail"),
     path("new/<int:consultation_id>/", views.bill_create, name="bill_create"),
     path("<int:pk>/pay/", views.bill_pay, name="bill_pay"),
+    path("<int:pk>/void/", views.bill_void, name="bill_void"),
 ]

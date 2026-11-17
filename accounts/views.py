@@ -109,7 +109,12 @@ def _patient_home(request):
 @login_required
 def dashboard(request):
     """Home after login. Each role gets its own page (UI.md §5.2)."""
-    if request.user.role == request.user.Role.PATIENT:
+    from . import dashboards
+
+    role = request.user.role
+    if role == request.user.Role.PATIENT:
         return _patient_home(request)
-    # Nurse, doctor and admin dashboards come later.
+    if role == request.user.Role.NURSE:
+        return dashboards.nurse_dashboard(request)
+    # Doctor and admin dashboards: generic page for now.
     return render(request, "accounts/dashboard.html")

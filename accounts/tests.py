@@ -340,3 +340,73 @@ class ShiftScreenTests(StaffTestCase):
         self.client.force_login(nurse.user)
         self.assertEqual(self.client.get(reverse("shift_create")).status_code, 403)
         self.assertNotContains(self.client.get(reverse("roster")), "Add shift")
+
+
+# ---------------------------------------------------------------------------
+# Dashboards (nurse, admin)
+# ---------------------------------------------------------------------------
+from decimal import Decimal  # noqa: E402
+
+from billing.models import Bill, BillItem  # noqa: E402
+from consultation.models import Consultation  # noqa: E402
+from patients.models import Patient  # noqa: E402
+from pharmacy.models import Medicine, PrescriptionItem  # noqa: E402
+from queueing import services as q  # noqa: E402
+from queueing.models import QueueTicket  # noqa: E402
+
+
+class DashboardTestCase(StaffTestCase):
+    """A small clinic day: Dr. Aisyah on the morning shift, a few tickets, medicines and bills."""
+
+    def setUp(self):
+        super().setUp()
+        self.doc = self.make_staff("Aisyah Rahman", "DOCTOR")
+        self.nurse = self.make_staff("Farah Lim", "NURSE")
+        self.add(self.doc)
+        self.patients = [Patient.objects.create(ic_no=f"9001{n:02d}-14-56{n:02d}", full_name=f"PATIENT {n}",
+                                                gender="M" if n % 2 else "F", date_of_birth=dt.date(1990, 1, n),
+                                                phone="012-3456789") for n in range(1, 5)]
+        self.tickets = [q.issue_ticket(issued_by=self.nurse.user, patient=p, source="WALKIN") for p in self.patients]
+        # one finished visit with an unpaid bill and an undispensed prescription
+        done = self.tickets[0]
+        q.call_next(called_by=self.nurse.user)
+        q.start_consultation(started_by=self.doc.user, ticket_id=done.pk)
+        q.complete_ticket(completed_by=self.doc.user, ticket_id=done.pk)
+        c = Consultation.objects.create(ticket=done, doctor=self.doc, symptoms="Fever", diagnosis="Viral fever",
+                                        consult_fee=Decimal("30"))
+        self.para = Medicine.objects.create(name="Paracetamol 500mg", category="Analgesic", unit="tablets",
+                                            unit_price=Decimal("0.50"), quantity=8, reorder_level=10,
+                                            expiry_date=TODAY + dt.timedelta(days=365))
+        Medicine.objects.create(name="Cough syrup 100ml", category="Cough", unit="bottles", unit_price=Decimal("8"),
+                                quantity=40, expiry_date=TODAY + dt.timedelta(days=10))
+        Medicine.objects.create(name="Loratadine 10mg", category="Antihistamine", unit="tablets",
+                                unit_price=Decimal("1"), quantity=200, expiry_date=TODAY + dt.timedelta(days=365))
+        PrescriptionItem.objects.create(consultation=c, medicine=self.para, dosage="2 tabs", quantity=6)
+        self.bill = Bill.objects.create(bill_no="B-20261104-001", consultation=c, created_by=self.nurse)
+        BillItem.objects.create(bill=self.bill, item_type="CONSULTATION", description="Consultation",
+                                quantity=1, unit_price=Decimal("30"))
+        BillItem.objects.create(bill=self.bill, item_type="MEDICINE", medicine=self.para,
+                                description="Paracetamol 500mg", quantity=6, unit_price=Decimal("0.50"))
+
+
+class NurseDashboardTests(DashboardTestCase):
+    def test_nurse_dashboard(self):
+        self.client.force_login(self.nurse.user)
+        page = self.client.get(reverse("dashboard"))
+        html = page.content.decode()
+        self.assertContains(page, "Welcome, Nurse Farah Lim")
+        self.assertContains(page, "Morning session")
+        self.assertContains(page, "Dr. Aisyah Rahman")
+        self.assertContains(page, "Online numbers open until 12:30 PM")
+        stats = page.context["stats"]
+        self.assertEqual(stats, {"today": 4, "checked_in": 3, "to_dispense": 1, "low_stock": 1})
+        self.assertContains(page, "Patient 2")                        # next in line
+        self.assertIn("Low stock", html)                              # Paracetamol
+        self.assertIn("Expiring soon", html)                          # Cough syrup
+        self.assertNotIn("Loratadine", html)                          # fine
+        self.assertContains(page, "RM 33.00")                         # unpaid bill total
+
+    def test_empty_day(self):
+        self.client.force_login(self.nurse.user)
+        Bill.objects.all().delete()
+        self.assertContains(self.client.get(reverse("dashboard")), "No unpaid bills.")

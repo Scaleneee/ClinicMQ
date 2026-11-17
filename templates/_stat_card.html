@@ -1,0 +1,14 @@
+{% comment %}
+  Stat card (UI.md §3): eyebrow label, big number, small note, icon top right.
+  The whole card is a link when its page exists.
+  Usage: {% include "_stat_card.html" with label="Low stock" value=stats.low_stock note="medicines" icon="capsule" name="pharmacy:medicine_list" query="?filter=low" %}
+{% endcomment %}
+{% if name %}{% url name as href %}{% endif %}
+{% if href %}<a class="cmq-stat-card" href="{{ href }}{{ query|default:'' }}">{% else %}<div class="cmq-stat-card">{% endif %}
+  <div class="cmq-stat-card-top">
+    <span class="cmq-eyebrow mb-0">{{ label }}</span>
+    {% if icon %}<i class="bi bi-{{ icon }}" aria-hidden="true"></i>{% endif %}
+  </div>
+  <div class="cmq-stat-card-value {% if tone %}is-{{ tone }}{% endif %}">{{ value }}</div>
+  {% if note %}<div class="cmq-stat-card-note">{{ note }}</div>{% endif %}
+{% if href %}</a>{% else %}</div>{% endif %}

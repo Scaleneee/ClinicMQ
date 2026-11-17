@@ -683,3 +683,33 @@ a.cmq-chip:hover { border-color: var(--cmq-ink); color: var(--cmq-ink); }
 .cmq-chip-warning { background: var(--cmq-yellow-wash); border-color: var(--cmq-yellow); color: #7a5c00; }
 .cmq-roster-add { display: inline-block; font-size: 13px; color: var(--cmq-muted); text-decoration: none; }
 .cmq-roster-add:hover { color: var(--cmq-ink); text-decoration: underline; }
+
+/* ---------- Dashboards ---------- */
+.cmq-session-strip {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 12px 16px; margin-bottom: 24px; border: 1px solid var(--cmq-line);
+  border-left: 3px solid var(--cmq-green); border-radius: var(--cmq-radius); background: var(--cmq-paper);
+}
+.cmq-session-strip.is-closed { border-left-color: var(--cmq-line); color: var(--cmq-muted); }
+.cmq-text-warning { color: #7a5c00; }
+.cmq-stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+@media (max-width: 991.98px) { .cmq-stat-grid { grid-template-columns: repeat(2, 1fr); } }
+.cmq-stat-card {
+  display: block; padding: 18px 20px; border: 1px solid var(--cmq-line); border-radius: var(--cmq-radius);
+  background: var(--cmq-paper); color: var(--cmq-ink); text-decoration: none;
+}
+a.cmq-stat-card:hover { background: var(--cmq-wash); color: var(--cmq-ink); border-color: #cfcfcf; }
+.cmq-stat-card-top { display: flex; justify-content: space-between; align-items: center; }
+.cmq-stat-card-top .bi { color: var(--cmq-muted); font-size: 18px; }
+.cmq-stat-card-value { font-size: 32px; line-height: 1.2; margin-top: 6px; }
+.cmq-stat-card-value.is-warning { color: #7a5c00; }
+.cmq-stat-card-note { font-size: 14px; color: var(--cmq-muted); }
+.cmq-card-flush { padding: 0; overflow: hidden; }
+.cmq-card-head { display: flex; justify-content: space-between; align-items: center; padding: 18px 20px; gap: 12px; }
+.cmq-card-head a { font-size: 15px; text-decoration: none; color: var(--cmq-muted); }
+.cmq-card-head a:hover { color: var(--cmq-ink); }
+.cmq-card-head.px-0 { padding-bottom: 12px; }
+.cmq-card-flush .cmq-table thead th { border-top: 1px solid var(--cmq-line); }
+.cmq-card-flush .cmq-table tr:last-child td { border-bottom: 0; }
+.cmq-list-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--cmq-line); }
+.cmq-badge-out { background: var(--cmq-red); color: #fff; }

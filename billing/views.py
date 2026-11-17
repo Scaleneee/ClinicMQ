@@ -8,10 +8,11 @@ patients see their own bills.
 
 import datetime as dt
 
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.paginator import Paginator
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, redirect, render
 
 from accounts.decorators import role_required
 
@@ -80,4 +81,39 @@ def bill_detail(request, pk):
         "is_patient": request.user.role == "PATIENT",
         "is_nurse": request.user.role == "NURSE",
         "is_admin": request.user.role == "ADMIN",
+    })
+
+
+def _error_text(e):
+    return " ".join(getattr(e, "messages", None) or [str(e) or "You don't have permission to do that."])
+
+
+# ---------------------------------------------------------------------------
+# Create: generate a bill from a consultation (nurse)
+# ---------------------------------------------------------------------------
+@role_required("NURSE")
+def bill_create(request, consultation_id):
+    from consultation.models import Consultation
+
+    c = get_object_or_404(Consultation.objects.select_related("ticket__patient", "doctor"), pk=consultation_id)
+    existing = Bill.objects.filter(consultation=c).first()
+    if existing:
+        messages.info(request, f"This visit already has bill {existing.bill_no}.")
+        return redirect("billing:bill_detail", pk=existing.pk)
+
+    if request.method == "POST":
+        try:
+            bill = bs.create_bill(created_by=request.user, consultation_id=c.pk)
+        except (ValidationError, PermissionDenied) as e:
+            messages.error(request, _error_text(e))
+            return redirect("billing:bill_create", consultation_id=c.pk)
+        messages.success(request, f"Bill {bill.bill_no} created.")
+        return redirect("billing:bill_detail", pk=bill.pk)
+
+    lines = bs.bill_lines(c)
+    return render(request, "billing/bill_create.html", {
+        "c": c,
+        "lines": lines,
+        "total": sum((line["line_total"] for line in lines), 0),
+        "completed": c.ticket.status == "COMPLETED",
     })

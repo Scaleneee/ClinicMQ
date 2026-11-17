@@ -232,3 +232,23 @@ class BillPageTests(BillingTestCase):
         self.assertEqual(self.client.get(f"/billing/{other.pk}/").status_code, 403)
         self.client.force_login(self.doc.user)
         self.assertEqual(self.client.get(f"/billing/{bill.pk}/").status_code, 403)
+
+
+class GenerateBillPageTests(BillingTestCase):
+    def test_preview_and_create(self):
+        c = self.visit([(self.para, 20)])
+        self.client.force_login(self.nurse.user)
+        self.assertContains(self.client.get("/billing/"), f"/billing/new/{c.pk}/")
+        page = self.client.get(f"/billing/new/{c.pk}/")
+        for text in ("Bill preview", "Consultation fee", "Paracetamol 500mg", "RM 40.00", "Create bill"):
+            self.assertContains(page, text)
+        response = self.client.post(f"/billing/new/{c.pk}/")
+        bill = Bill.objects.get(consultation=c)
+        self.assertRedirects(response, f"/billing/{bill.pk}/")
+        # A second visit to the page goes to the existing bill.
+        self.assertRedirects(self.client.get(f"/billing/new/{c.pk}/"), f"/billing/{bill.pk}/")
+
+    def test_admin_cannot_generate(self):
+        c = self.visit()
+        self.client.force_login(self.admin.user)
+        self.assertEqual(self.client.post(f"/billing/new/{c.pk}/").status_code, 403)

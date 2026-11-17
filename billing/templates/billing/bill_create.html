@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% load queue_tags bill_tags %}
+
+{% block title %}Generate bill · ClinicMQ{% endblock %}
+
+{% block content %}
+<div class="cmq-form-page">
+  <p class="cmq-eyebrow"><a href="{% url 'billing:bill_list' %}"><i class="bi bi-arrow-left"></i> Back</a></p>
+  <h1 class="cmq-title">Generate bill</h1>
+
+  <div class="cmq-patient-strip">
+    <div class="cmq-ticket-no mb-0" style="font-size:36px">{{ c.ticket.queue_no|queue_no }}</div>
+    <div class="flex-fill">
+      <strong>{{ c.ticket.patient.full_name|title }}</strong>
+      <div class="cmq-muted">{{ c.diagnosis }} · Dr. {{ c.doctor.full_name }} · {{ c.created_at|date:"j M Y" }}</div>
+    </div>
+  </div>
+
+  {% if not completed %}
+    <div class="cmq-alert cmq-alert-warning" role="status">
+      <i class="bi bi-hourglass-split"></i>
+      <div class="cmq-alert-body">The patient is still with the doctor. Generate the bill after the visit is completed.</div>
+    </div>
+  {% endif %}
+
+  <section class="cmq-card cmq-card-flush mb-4">
+    <div class="cmq-card-head"><h2 class="cmq-section-title mb-0">Bill preview</h2></div>
+    <div style="overflow-x:auto">
+      <table class="cmq-table">
+        <thead><tr><th>Item</th><th class="text-end">Qty</th><th class="text-end">Unit price</th><th class="text-end">Amount</th></tr></thead>
+        <tbody>
+          {% for l in lines %}
+            <tr>
+              <td>{{ l.description }}</td>
+              <td class="text-end">{{ l.quantity }}</td>
+              <td class="text-end text-nowrap">{{ l.unit_price|rm }}</td>
+              <td class="text-end text-nowrap">{{ l.line_total|rm }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="px-3 pb-3">
+      <div class="cmq-invoice-totals"><div class="cmq-money-row is-total"><span>Total</span><span>{{ total|rm }}</span></div></div>
+      <p class="cmq-hint">Medicines are charged at today's prices. The bill keeps these prices even if they change later.</p>
+    </div>
+  </section>
+
+  <form method="post" class="d-flex gap-2 justify-content-end">
+    {% csrf_token %}
+    <a class="btn btn-secondary" href="{% url 'billing:bill_list' %}">Cancel</a>
+    <button type="submit" class="btn btn-primary" {% if not completed %}disabled{% endif %}><i class="bi bi-receipt"></i> Create bill</button>
+  </form>
+</div>
+{% endblock %}

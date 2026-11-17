@@ -16,7 +16,7 @@
             {% include "_nav_link.html" with name="dashboard" icon="house" label="Home" %}
             {% include "_nav_link.html" with name="queueing:get_number" icon="plus-circle" label="Get number" %}
             {% include "_nav_link.html" with name="queueing:my_queue" icon="ticket-perforated" label="My queue" %}
-            {% include "_nav_link.html" with name="consultation:my_visits" icon="clock-history" label="My visits" %}
+            {% include "_nav_link.html" with name="patients:my_visits" icon="clock-history" label="My visits" %}
             {% include "_nav_link.html" with name="billing:my_bills" icon="receipt" label="My bills" %}
             {% include "_nav_link.html" with name="patients:my_profile" icon="person" label="Profile" %}
           {% elif user.role == "NURSE" %}

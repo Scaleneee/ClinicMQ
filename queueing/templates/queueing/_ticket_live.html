@@ -105,7 +105,7 @@
 
     {% if ticket.status == "COMPLETED" and mode == "patient" %}
       <div class="d-flex gap-2 mt-3">
-        {% include "_action_link.html" with name="consultation:my_visits" label="My visits" css="btn btn-secondary flex-fill" %}
+        {% include "_action_link.html" with name="patients:my_visits" label="My visits" css="btn btn-secondary flex-fill" %}
         {% include "_action_link.html" with name="billing:my_bills" label="My bills" css="btn btn-secondary flex-fill" %}
       </div>
     {% endif %}

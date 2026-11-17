@@ -268,3 +268,23 @@ class MyProfileScreenTests(PatientTestCase):
 
     def test_verify_without_request_goes_to_step_one(self):
         self.assertRedirects(self.client.get(reverse("patients:verify_email")), reverse("patients:change_email"))
+
+
+class MyVisitsScreenTests(PatientTestCase):
+    def test_patient_sees_only_own_visits(self):
+        mine, other = self.make_patient(1, online=True), self.make_patient(2, online=True)
+        doc = Staff.objects.create(user=self.doctor, full_name="Aisyah Rahman", role="DOCTOR", phone="012-0000000")
+        for p, diagnosis, no in ((mine, "Viral fever", 1), (other, "Sprained ankle", 2)):
+            Consultation.objects.create(ticket=self.add_ticket(p, no=no), doctor=doc, symptoms="-",
+                                        diagnosis=diagnosis, consult_fee=Decimal("30"))
+        self.client.force_login(mine.user)
+        page = self.client.get(reverse("patients:my_visits"))
+        self.assertContains(page, "Viral fever")
+        self.assertNotContains(page, "Sprained ankle")
+        # navbar and home page now link here
+        self.assertContains(self.client.get(reverse("dashboard")), reverse("patients:my_visits"))
+
+    def test_no_visits_empty_state(self):
+        p = self.make_patient(1, online=True)
+        self.client.force_login(p.user)
+        self.assertContains(self.client.get(reverse("patients:my_visits")), "No visits yet.")

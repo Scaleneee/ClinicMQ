@@ -221,3 +221,13 @@ def cancel_email_change(request):
     request.session.pop(EMAIL_CHANGE_KEY, None)
     messages.info(request, "Email change cancelled.")
     return redirect("patients:my_profile")
+
+
+@role_required("PATIENT")
+def my_visits(request):
+    """The patient's own visit history (same timeline as the staff view)."""
+    patient = _own_patient(request)
+    return render(request, "patients/my_visits.html", {
+        "patient": patient,
+        "visits": ps.patient_visits(patient) if patient else [],
+    })

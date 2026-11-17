@@ -46,7 +46,7 @@
 
   {# Quick links #}
   <nav class="cmq-link-list mt-4" aria-label="More">
-    {% url "consultation:my_visits" as visits_url %}
+    {% url "patients:my_visits" as visits_url %}
     {% url "billing:my_bills" as bills_url %}
     {% include "accounts/_home_link.html" with href=visits_url icon="clock-history" label="My visits" hint="Diagnoses, medicines and MCs" %}
     {% include "accounts/_home_link.html" with href=bills_url icon="receipt" label="My bills" hint="Bills and receipts" %}

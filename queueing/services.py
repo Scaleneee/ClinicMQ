@@ -652,6 +652,11 @@ def queue_overview(now=None):
         "online_open": closed_reason is None,
         "online_until": timezone.localtime(cutoff).time(),
         "closed_reason": closed_reason,
+        # Walk-ins run until the session ends (no online cut-off)
+        "walkin_open": open_session is not None and doctor is not None,
+        "walkin_reason": (closed_message(setting) if open_session is None else
+                          None if doctor is not None else
+                          "No doctor is on duty this session, so queue numbers can't be issued."),
     }
 
 

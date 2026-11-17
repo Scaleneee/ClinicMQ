@@ -1,0 +1,73 @@
+{% load queue_tags %}
+{# Filter pills + table. Reloads itself every 10 seconds, except while a confirm dialog is open. #}
+<div id="board-live"
+     hx-get="{% url 'queueing:board_live' %}?status={{ status_key }}"
+     hx-trigger="every 10s [!document.querySelector('.modal.show')]"
+     hx-swap="outerHTML">
+
+  <nav class="cmq-pills" aria-label="Filter by status">
+    {% for p in pills %}
+      <a class="cmq-pill {% if p.active %}active{% endif %}"
+         href="{% url 'queueing:board' %}{% if p.key != 'all' %}?status={{ p.key }}{% endif %}"
+         {% if p.active %}aria-current="page"{% endif %}>
+        {{ p.label }} <span class="cmq-pill-count">{{ p.count }}</span>
+      </a>
+    {% endfor %}
+  </nav>
+
+  <div class="cmq-table-wrap">
+    <table class="cmq-table">
+      <thead>
+        <tr>
+          <th>Place</th><th>No.</th><th>Patient</th><th>Source</th><th>Checked in</th><th>Status</th>
+          {% if can_act %}<th class="text-end">Actions</th>{% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in tickets %}
+          <tr class="{% if t.status == 'IN_CONSULTATION' %}is-serving{% endif %}">
+            <td>{% if t.place %}{{ t.place }}{% else %}<span class="cmq-muted">–</span>{% endif %}</td>
+            <td class="cmq-no">{{ t.queue_no|queue_no }}</td>
+            <td>
+              {{ t.patient.full_name|title }}{% if t.is_late %}<span class="cmq-tag-late">Late check-in</span>{% endif %}
+              <div class="cmq-muted" style="font-size:14px">{{ t.patient.ic_no }}</div>
+            </td>
+            <td>{{ t.get_source_display }}</td>
+            <td>{% if t.checked_in_at %}{{ t.checked_in_at|time:"g:i A" }}{% else %}<span class="cmq-muted">–</span>{% endif %}</td>
+            <td>{% status_badge t.status %}</td>
+            {% if can_act %}
+              <td>
+                <div class="cmq-row-actions">
+                  {% if t.status == "WAITING" or t.status == "SKIPPED" or t.status == "MISSED" and not t.rejoined %}
+                    <form method="post" action="{% url 'queueing:board_check_in' t.pk %}">
+                      {% csrf_token %}<input type="hidden" name="status" value="{{ status_key }}">
+                      <button type="submit" class="btn btn-success btn-sm"><i class="bi bi-check2"></i> Check in</button>
+                    </form>
+                  {% endif %}
+                  {% if t.status in cancellable %}
+                    <form method="post" action="{% url 'queueing:board_cancel' t.pk %}"
+                          data-confirm-title="Cancel number {{ t.queue_no|queue_no }}?"
+                          data-confirm-text="{{ t.patient.full_name|title }} will lose their place in the queue."
+                          data-confirm-button="Cancel number">
+                      {% csrf_token %}<input type="hidden" name="status" value="{{ status_key }}">
+                      <button type="submit" class="btn btn-sm btn-quiet-danger">Cancel</button>
+                    </form>
+                  {% endif %}
+                </div>
+              </td>
+            {% endif %}
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="7" class="cmq-empty-row">
+              <i class="bi bi-inbox"></i>
+              {% if status_key == "all" %}No queue numbers yet this session.{% else %}No tickets with this status.{% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <p class="mt-3 mb-0"><span class="cmq-live">Live · refreshes every 10 seconds</span></p>
+</div>

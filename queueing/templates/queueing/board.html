@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% load queue_tags %}
+
+{% block title %}Queue board · ClinicMQ{% endblock %}
+
+{% block content %}
+  <div class="cmq-page-header">
+    <div>
+      <p class="cmq-eyebrow">{% now "l, j F Y" %}</p>
+      <h1 class="cmq-title">Queue board</h1>
+      <p class="cmq-subtitle">
+        {{ o.session_label }} session{% if not o.is_open %} (closed){% endif %}
+        · {% if o.doctor %}Dr. {{ o.doctor.full_name }}{% else %}No doctor on duty{% endif %}
+        · Now serving <strong>{% if o.now_serving %}{{ o.now_serving.queue_no|queue_no }}{% else %}–{% endif %}</strong>
+      </p>
+    </div>
+    <div class="cmq-page-actions">
+      {% if can_act %}
+        <a class="btn btn-primary" href="{% url 'queueing:walk_in' %}"><i class="bi bi-person-plus"></i> Walk-in</a>
+      {% endif %}
+      {% url "queueing:tv" as tv_url %}
+      {% if tv_url %}
+        <a class="btn btn-secondary" href="{{ tv_url }}" target="_blank" rel="noopener"><i class="bi bi-tv"></i> TV board</a>
+      {% endif %}
+    </div>
+  </div>
+
+  {% include "queueing/_board_table.html" %}
+{% endblock %}

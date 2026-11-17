@@ -14,4 +14,11 @@ urlpatterns = [
     # Public status page (QR on a printed walk-in ticket)
     path("t/<uuid:token>/", views.ticket_status, name="ticket_status"),
     path("t/<uuid:token>/live/", views.ticket_status_live, name="ticket_status_live"),
+    # Nurse
+    path("board/", views.board, name="board"),
+    path("board/live/", views.board_live, name="board_live"),
+    path("board/<int:ticket_id>/check-in/", views.board_check_in, name="board_check_in"),
+    path("board/<int:ticket_id>/cancel/", views.board_cancel, name="board_cancel"),
+    path("walk-in/", views.walk_in, name="walk_in"),
+    path("walk-in/<int:ticket_id>/ticket/", views.walkin_ticket, name="walkin_ticket"),
 ]

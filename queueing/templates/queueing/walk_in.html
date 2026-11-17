@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% load queue_tags %}
+
+{% block title %}Walk-in · ClinicMQ{% endblock %}
+
+{% block content %}
+  <div class="cmq-page-header">
+    <div>
+      <p class="cmq-eyebrow"><a href="{% url 'queueing:board' %}"><i class="bi bi-arrow-left"></i> Queue board</a></p>
+      <h1 class="cmq-title">Walk-in</h1>
+      <p class="cmq-subtitle">
+        {{ o.session_label }} session · {% if o.doctor %}Dr. {{ o.doctor.full_name }}{% else %}No doctor on duty{% endif %}
+        · {{ o.waiting }} waiting
+      </p>
+    </div>
+    <div class="cmq-page-actions">
+      {% include "_action_link.html" with name="patients:create" label="New patient" icon="person-plus" css="btn btn-secondary" %}
+    </div>
+  </div>
+
+  {% if not o.walkin_open %}
+    <div class="cmq-alert cmq-alert-warning" role="alert">
+      <i class="bi bi-exclamation-triangle"></i>
+      <div class="cmq-alert-body">{{ o.walkin_reason }}</div>
+    </div>
+  {% endif %}
+
+  <div class="row g-4">
+    {# Step 1: find the patient #}
+    <div class="col-lg-7">
+      <p class="cmq-eyebrow mb-2">Step 1</p>
+      <h2 class="cmq-section-title">Find the patient</h2>
+      <form method="get" class="d-flex gap-2 mb-3" role="search">
+        <div class="cmq-field flex-fill mb-0">
+          <label for="walkin-q" class="visually-hidden">IC number, name or phone</label>
+          <input type="text" id="walkin-q" name="q" value="{{ query }}" placeholder="IC number, name or phone" autofocus>
+        </div>
+        <button type="submit" class="btn btn-secondary"><i class="bi bi-search"></i> Search</button>
+      </form>
+
+      {% if query %}
+        {% for p in results %}
+          <a class="cmq-result {% if selected and selected.pk == p.pk %}is-selected{% endif %}"
+             href="?q={{ query|urlencode }}&patient={{ p.pk }}">
+            <div>
+              <strong>{{ p.full_name|title }}</strong>
+              <div class="cmq-muted" style="font-size:15px">{{ p.ic_no }} · {{ p.date_of_birth|age }} yrs · {{ p.phone }}</div>
+            </div>
+            <i class="bi bi-chevron-right cmq-muted"></i>
+          </a>
+        {% empty %}
+          <div class="cmq-card cmq-empty">
+            <i class="bi bi-search cmq-empty-icon"></i>
+            <p class="mb-0">No patient matches "{{ query }}". Check the IC number, or register a new patient.</p>
+          </div>
+        {% endfor %}
+      {% else %}
+        <p class="cmq-muted">Search by IC number (dashes optional), name or phone.</p>
+      {% endif %}
+    </div>
+
+    {# Step 2: issue the number #}
+    <div class="col-lg-5">
+      <p class="cmq-eyebrow mb-2">Step 2</p>
+      <h2 class="cmq-section-title">Issue number</h2>
+      {% if selected %}
+        <section class="cmq-card">
+          <h3 class="cmq-section-title mb-1">{{ selected.full_name|title }}</h3>
+          <p class="cmq-muted mb-3">
+            {{ selected.ic_no }} · {{ selected.date_of_birth|age }} yrs · {{ selected.get_gender_display }}<br>{{ selected.phone }}
+          </p>
+          {% if existing %}
+            <div class="cmq-alert cmq-alert-warning mb-0" role="alert">
+              <i class="bi bi-exclamation-triangle"></i>
+              <div class="cmq-alert-body">
+                Already has number <strong>{{ existing.queue_no|queue_no }}</strong> today ({{ existing.status|status_label|lower }}).
+                <a href="{% url 'queueing:board' %}">See queue board</a>
+              </div>
+            </div>
+          {% else %}
+            <form method="post">
+              {% csrf_token %}
+              <input type="hidden" name="patient" value="{{ selected.pk }}">
+              <button type="submit" class="btn btn-primary btn-lg w-100" {% if not o.walkin_open %}disabled{% endif %}>
+                <i class="bi bi-ticket-perforated"></i> Issue number
+              </button>
+            </form>
+            <p class="cmq-hint mb-0">Walk-ins are checked in straight away.</p>
+          {% endif %}
+        </section>
+      {% else %}
+        <div class="cmq-card cmq-empty">
+          <i class="bi bi-person cmq-empty-icon"></i>
+          <p class="mb-0">Select a patient from the search results.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}

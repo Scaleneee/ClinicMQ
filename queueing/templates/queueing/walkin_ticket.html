@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% load queue_tags %}
+
+{% block title %}Number {{ ticket.queue_no|queue_no }} · ClinicMQ{% endblock %}
+
+{% block content %}
+<div class="cmq-narrow text-center cmq-no-print">
+  <p class="cmq-eyebrow">Number issued to {{ ticket.patient.full_name|title }}</p>
+  <div class="cmq-ticket-no cmq-ticket-no-xl">{{ ticket.queue_no|queue_no }}</div>
+  <div class="mb-4">{% status_badge ticket.status %}</div>
+  <div class="d-flex gap-2 justify-content-center mb-4">
+    <button type="button" class="btn btn-primary btn-lg" onclick="window.print()"><i class="bi bi-printer"></i> Print ticket</button>
+    <a class="btn btn-secondary btn-lg" href="{% url 'queueing:walk_in' %}">Next walk-in</a>
+  </div>
+  <p class="cmq-eyebrow">Ticket preview (80 mm)</p>
+</div>
+
+{# The printed ticket: numbers only, never the patient's name or IC. #}
+<div class="cmq-print-ticket">
+  <div class="cmq-pt-clinic">{{ cs.clinic_name }}</div>
+  <div class="cmq-pt-label">Your queue number</div>
+  <div class="cmq-pt-no">{{ ticket.queue_no|queue_no }}</div>
+  <div class="cmq-pt-meta">{{ ticket.queue_date|date:"j M Y" }} · {{ ticket.get_session_display }} session</div>
+  <div class="cmq-pt-row"><span>People ahead</span><strong>{% if s.ahead is None %}–{% else %}{{ s.ahead }}{% endif %}</strong></div>
+  <div class="cmq-pt-row"><span>Est. wait</span><strong>{% wait_range s.wait_min s.wait_max %}</strong></div>
+  <div class="cmq-pt-qr">{{ status_url|qr_svg }}</div>
+  <div class="cmq-pt-note">Scan to track your turn on your phone.<br>Please wait to be called.</div>
+</div>
+{% endblock %}

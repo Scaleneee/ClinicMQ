@@ -530,3 +530,33 @@ a.cmq-link-row:hover { background: var(--cmq-wash); color: var(--cmq-ink); }
 .cmq-ticket-action span { color: var(--cmq-muted); }
 .cmq-how { padding-left: 20px; margin: 0; }
 .cmq-how li { margin-bottom: 10px; }
+
+/* ---------- Walk-in search results ---------- */
+.cmq-result {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 14px 16px; margin-bottom: 8px; border: 1px solid var(--cmq-line); border-radius: var(--cmq-radius);
+  color: var(--cmq-ink); text-decoration: none; background: var(--cmq-paper);
+}
+.cmq-result:hover { background: var(--cmq-wash); color: var(--cmq-ink); }
+.cmq-result.is-selected { border-color: var(--cmq-ink); box-shadow: inset 3px 0 0 var(--cmq-ink); }
+
+/* ---------- Printed walk-in ticket (80 mm thermal or any printer) ---------- */
+.cmq-print-ticket {
+  width: 80mm; max-width: 100%; margin: 0 auto 32px; padding: 6mm 5mm;
+  border: 1px dashed #bdbdbd; text-align: center; background: #fff; color: #000;
+}
+.cmq-pt-clinic { font-size: 18px; font-weight: 700; }
+.cmq-pt-label { font-size: 14px; margin-top: 8px; }
+.cmq-pt-no { font-size: 64px; line-height: 1.05; letter-spacing: 2px; }
+.cmq-pt-meta { font-size: 14px; margin-bottom: 8px; }
+.cmq-pt-row { display: flex; justify-content: space-between; font-size: 15px; border-top: 1px dashed #bdbdbd; padding: 4px 0; }
+.cmq-pt-qr { width: 34mm; height: 34mm; margin: 8px auto 4px; }
+.cmq-pt-qr svg { width: 100%; height: 100%; }
+.cmq-pt-note { font-size: 13px; }
+
+@media print {
+  @page { size: 80mm auto; margin: 0; }
+  body * { visibility: hidden; }
+  .cmq-print-ticket, .cmq-print-ticket * { visibility: visible; }
+  .cmq-print-ticket { position: absolute; left: 0; top: 0; margin: 0; border: 0; }
+}

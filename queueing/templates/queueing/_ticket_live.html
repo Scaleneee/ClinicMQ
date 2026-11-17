@@ -7,7 +7,7 @@
 <div id="ticket-live"
      {% if is_live %}
        hx-get="{% if mode == 'public' %}{% url 'queueing:ticket_status_live' ticket.public_token %}{% else %}{% url 'queueing:my_queue_live' %}{% endif %}"
-       hx-trigger="every 5s" hx-swap="outerHTML"
+       hx-trigger="every 5s [!document.querySelector('.modal.show')]" hx-swap="outerHTML"
      {% endif %}>
 
 {% if not ticket %}

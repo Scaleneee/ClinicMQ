@@ -311,7 +311,7 @@ class PatientScreenTests(ScreenTestCase):
         self.assertRedirects(page, reverse("queueing:my_queue"))
         self.assertContains(page, "Your number is 001")
         self.assertContains(page, "Check in when you arrive")
-        self.assertContains(page, 'hx-trigger="every 5s"')
+        self.assertContains(page, 'hx-trigger="every 5s')
 
         # Get number now shows the existing ticket (R3)
         self.assertContains(self.client.get(reverse("queueing:get_number")), "You already have a number today")
@@ -334,7 +334,7 @@ class PatientScreenTests(ScreenTestCase):
         page = self.client.post(reverse("queueing:cancel_my_ticket"), follow=True)
         self.assertContains(page, "Number 001 was cancelled")
         self.assertContains(page, "Get a new number")
-        self.assertNotContains(page, 'hx-trigger="every 5s"')  # stops refreshing
+        self.assertNotContains(page, 'hx-trigger="every 5s')  # stops refreshing
 
     def test_called_shows_red_banner_and_come_now(self):
         tickets = {n: self.take(n, now=at(9, 0, n)) for n in range(1, 4)}
@@ -369,3 +369,55 @@ class PatientScreenTests(ScreenTestCase):
         self.assertContains(page, "001")
         self.assertNotContains(page, self.patients[1].full_name)
         self.assertNotContains(page, "Cancel my number")
+
+
+class NurseScreenTests(ScreenTestCase):
+    def test_board_lists_line_with_places_and_filters(self):
+        tickets = {n: self.take(n, now=at(9, 0, n)) for n in range(1, 4)}
+        self.check_in(tickets[2], at(9, 30))
+        self.login(self.nurse)
+        page = self.client.get(reverse("queueing:board"))
+        self.assertContains(page, "Queue board")
+        self.assertContains(page, "Dr. Aisyah Rahman")
+        self.assertContains(page, 'Checked in <span class="cmq-pill-count">1</span>')
+        page = self.client.get(reverse("queueing:board_live") + "?status=not_arrived")
+        self.assertContains(page, "P1")
+        self.assertNotContains(page, "P2")
+
+    def test_board_check_in_and_cancel(self):
+        t = self.take(1, now=at(9, 30))
+        self.login(self.nurse)
+        page = self.client.post(reverse("queueing:board_check_in", args=[t.pk]), follow=True)
+        self.assertContains(page, "Number 001 checked in.")
+        page = self.client.post(reverse("queueing:board_cancel", args=[t.pk]), {"status": "checked_in"}, follow=True)
+        self.assertContains(page, "Number 001 cancelled.")
+        self.assertEqual(page.redirect_chain[-1][0], reverse("queueing:board") + "?status=checked_in")
+
+    def test_doctor_sees_board_without_actions(self):
+        self.take(1, now=at(9, 30))
+        self.login(self.doctor_user)
+        page = self.client.get(reverse("queueing:board"))
+        self.assertEqual(page.status_code, 200)
+        self.assertNotContains(page, "Check in</button>")
+        self.assertEqual(self.client.get(reverse("queueing:walk_in")).status_code, 403)
+
+    def test_walk_in_search_issue_and_print(self):
+        p = self.patient(1)
+        self.login(self.nurse)
+        page = self.client.get(reverse("queueing:walk_in") + "?q=900101")
+        self.assertContains(page, "P1")
+        page = self.client.get(reverse("queueing:walk_in") + f"?q=900101&patient={p.pk}")
+        self.assertContains(page, "Issue number")
+
+        page = self.client.post(reverse("queueing:walk_in"), {"patient": p.pk}, follow=True)
+        t = QueueTicket.objects.get()
+        self.assertEqual((t.source, t.status), ("WALKIN", "CHECKED_IN"))
+        self.assertContains(page, "Print ticket")
+        self.assertContains(page, "<svg")                                          # QR code
+        ticket_html = page.content.decode().split('class="cmq-print-ticket"')[1]
+        self.assertNotIn("P1", ticket_html)                                        # no name on the ticket
+        self.assertNotIn(p.ic_no, ticket_html)
+
+        # Second time: already has a number
+        page = self.client.get(reverse("queueing:walk_in") + f"?patient={p.pk}")
+        self.assertContains(page, "Already has number")

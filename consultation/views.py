@@ -189,3 +189,28 @@ def consultation_edit(request, pk):
             return _after_save(request, c, warnings, "updated")
     return _form_page(request, form=form, ticket=c.ticket, consultation=c, rows=rows, item_errors=item_errors,
                       locked_ids={str(i.medicine_id) for i in items if i.dispensed}, billed=billed)
+
+
+# ---------------------------------------------------------------------------
+# Delete (the doctor who wrote it, or an admin) - blocked once billed or dispensed
+# ---------------------------------------------------------------------------
+@role_required("DOCTOR", "ADMIN")
+def consultation_delete(request, pk):
+    c = get_object_or_404(Consultation.objects.select_related("ticket__patient", "doctor"), pk=pk)
+    if request.method == "POST":
+        done = _run(request, lambda: cs.delete_consultation(deleted_by=request.user, consultation_id=c.pk) or True,
+                    f"The consultation for {c.ticket.patient.full_name.title()} was deleted.")
+        if done:
+            return redirect("consultation:list")
+        return redirect("consultation:delete", pk=c.pk)
+
+    blocked = None
+    if cs.is_billed(c):
+        blocked = "This consultation has been billed and can't be deleted."
+    elif cs.has_dispensed(c):
+        blocked = "Medicines from this consultation were already dispensed, so it can't be deleted."
+    elif request.user.role == "DOCTOR" and c.doctor.user_id != request.user.id:
+        blocked = "Only the doctor who wrote it, or an admin, can delete a consultation."
+    return render(request, "consultation/consultation_confirm_delete.html", {
+        "c": c, "mc": cs.get_mc(c), "blocked": blocked,
+    })

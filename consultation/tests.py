@@ -275,3 +275,31 @@ class FormScreenTests(ConsultationTestCase):
     def test_nurse_cannot_write(self):
         self.client.force_login(self.nurse.user)
         self.assertEqual(self.client.get(reverse("consultation:create", args=[self.ticket.pk])).status_code, 403)
+
+
+class DeleteScreenTests(ConsultationTestCase):
+    def test_author_deletes(self):
+        c, _ = self.create(mc={"start_date": TODAY, "days": 1, "reason": "Fever"})
+        self.client.force_login(self.doc.user)
+        self.assertContains(self.client.get(reverse("consultation:detail", args=[c.pk])), "Delete")
+        page = self.client.get(reverse("consultation:delete", args=[c.pk]))
+        self.assertContains(page, "MC MC-20261104-001 will be deleted too")
+        page = self.client.post(reverse("consultation:delete", args=[c.pk]), follow=True)
+        self.assertContains(page, "The consultation for Siti Nurhaliza was deleted.")
+        self.assertFalse(Consultation.objects.exists())
+
+    def test_blocked_states(self):
+        c, _ = self.create()
+        self.client.force_login(self.doc2.user)
+        self.assertContains(self.client.get(reverse("consultation:delete", args=[c.pk])), "Only the doctor who wrote it")
+        Bill.objects.create(bill_no="B-1", consultation=c, created_by=self.nurse)
+        self.client.force_login(self.admin.user)
+        self.assertContains(self.client.get(reverse("consultation:delete", args=[c.pk])), "has been billed")
+        page = self.client.post(reverse("consultation:delete", args=[c.pk]), follow=True)
+        self.assertContains(page, "billed and can&#x27;t be deleted")
+        self.assertTrue(Consultation.objects.exists())
+
+    def test_nurse_cannot_delete(self):
+        c, _ = self.create()
+        self.client.force_login(self.nurse.user)
+        self.assertEqual(self.client.get(reverse("consultation:delete", args=[c.pk])).status_code, 403)

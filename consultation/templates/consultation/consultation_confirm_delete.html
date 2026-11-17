@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Delete consultation · ClinicMQ{% endblock %}
+
+{% block content %}
+<div class="cmq-narrow">
+  <p class="cmq-eyebrow"><a href="{% url 'consultation:detail' c.pk %}"><i class="bi bi-arrow-left"></i> Back</a></p>
+
+  <section class="cmq-card text-center">
+    {% if blocked %}
+      <div class="cmq-auth-icon"><i class="bi bi-lock"></i></div>
+      <h1 class="cmq-auth-title mb-2">Can't delete this consultation</h1>
+      <p class="cmq-muted mb-4">{{ blocked }}</p>
+      <a class="btn btn-primary" href="{% url 'consultation:detail' c.pk %}">Back to consultation</a>
+    {% else %}
+      <div class="cmq-auth-icon is-danger"><i class="bi bi-trash"></i></div>
+      <h1 class="cmq-auth-title mb-2">Delete this consultation?</h1>
+      <p class="cmq-muted mb-4">
+        {{ c.diagnosis }} · {{ c.ticket.patient.full_name|title }} · {{ c.created_at|date:"j M Y" }}.
+        Its prescription{% if mc %} and MC {{ mc.mc_no }}{% endif %} will be deleted too. This can't be undone.
+      </p>
+      <form method="post" class="d-flex gap-2 justify-content-center">
+        {% csrf_token %}
+        <a class="btn btn-secondary" href="{% url 'consultation:detail' c.pk %}">Cancel</a>
+        <button type="submit" class="btn btn-outline-danger"><i class="bi bi-trash"></i> Delete consultation</button>
+      </form>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

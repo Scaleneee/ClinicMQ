@@ -311,3 +311,23 @@ class ReceiptTests(BillingTestCase):
         self.assertEqual(self.client.get(f"/billing/{bill.pk}/receipt.pdf").status_code, 200)
         self.client.force_login(self.doc.user)
         self.assertEqual(self.client.get(f"/billing/{bill.pk}/receipt.pdf").status_code, 403)
+
+
+class MyBillsPageTests(BillingTestCase):
+    def test_patient_sees_own_bills(self):
+        siti = User.objects.create_user(username="siti@x.my", email="siti@x.my", password="x", role="PATIENT")
+        mine = self.bill(items=[(self.para, 20)], user=siti)
+        other = self.bill()
+        self.client.force_login(siti)
+        page = self.client.get("/billing/mine/")
+        self.assertContains(page, mine.bill_no)
+        self.assertContains(page, "RM 40.00")
+        self.assertNotContains(page, other.bill_no)
+        self.assertContains(self.client.get(f"/billing/{mine.pk}/"), 'href="/billing/mine/"')  # Back goes here
+
+    def test_patient_without_record_and_staff(self):
+        lone = User.objects.create_user(username="lone@x.my", email="lone@x.my", password="x", role="PATIENT")
+        self.client.force_login(lone)
+        self.assertContains(self.client.get("/billing/mine/"), "isn't linked to a patient record")
+        self.client.force_login(self.nurse.user)
+        self.assertEqual(self.client.get("/billing/mine/").status_code, 403)

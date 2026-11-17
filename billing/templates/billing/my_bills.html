@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% load bill_tags %}
+
+{% block title %}My bills · ClinicMQ{% endblock %}
+
+{% block content %}
+<div class="cmq-narrow">
+  <p class="cmq-eyebrow">{% now "l, j F Y" %}</p>
+  <h1 class="cmq-title">My bills</h1>
+  <p class="cmq-subtitle mb-4">Your bills and receipts.</p>
+
+  {% if not patient %}
+    <div class="cmq-alert cmq-alert-warning" role="alert">
+      <i class="bi bi-exclamation-triangle"></i>
+      <div class="cmq-alert-body">Your account isn't linked to a patient record yet. Please ask at the clinic counter.</div>
+    </div>
+  {% else %}
+    {% for b in bills %}
+      <a class="cmq-card cmq-bill-card" href="{% url 'billing:bill_detail' b.pk %}">
+        <div class="flex-fill">
+          <div class="cmq-muted">{{ b.created_at|date:"j F Y" }}</div>
+          <strong class="cmq-bill-card-total">{{ b.total_amount|rm }}</strong>
+          <div class="cmq-muted" style="font-size:15px">{{ b.bill_no }} · Dr. {{ b.consultation.doctor.full_name }}</div>
+        </div>
+        <div class="text-end d-flex flex-column align-items-end gap-2">
+          {% bill_badge b.status %}
+          <span class="cmq-bill-card-link">View <i class="bi bi-chevron-right"></i></span>
+        </div>
+      </a>
+    {% empty %}
+      <div class="cmq-card cmq-empty-row">
+        <i class="bi bi-receipt"></i>
+        No bills yet.
+      </div>
+    {% endfor %}
+  {% endif %}
+</div>
+{% endblock %}

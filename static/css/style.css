@@ -769,3 +769,7 @@ a.cmq-tag-mc:hover { border-color: var(--cmq-ink); color: var(--cmq-ink); }
 .cmq-pay-due strong { font-size: 44px; font-weight: 400; line-height: 1.1; }
 .cmq-pay-tiles label { flex-direction: column; gap: 4px; min-height: 84px; font-size: 17px; }
 .cmq-pay-tiles label .bi { font-size: 24px; }
+.cmq-bill-card { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; color: var(--cmq-ink); text-decoration: none; }
+.cmq-bill-card:hover { background: var(--cmq-wash); color: var(--cmq-ink); }
+.cmq-bill-card-total { display: block; font-size: 24px; font-weight: 400; margin: 2px 0; }
+.cmq-bill-card-link { color: var(--cmq-muted); font-size: 15px; }

@@ -201,3 +201,20 @@ def receipt_pdf(request, pk):
     disposition = "attachment" if request.GET.get("download") else "inline"
     response["Content-Disposition"] = f'{disposition}; filename="Receipt-{bill.bill_no}.pdf"'
     return response
+
+
+# ---------------------------------------------------------------------------
+# My bills (patient)
+# ---------------------------------------------------------------------------
+@role_required("PATIENT")
+def my_bills(request):
+    from django.core.exceptions import ObjectDoesNotExist
+
+    try:
+        patient = request.user.patient
+    except ObjectDoesNotExist:
+        patient = None
+    return render(request, "billing/my_bills.html", {
+        "patient": patient,
+        "bills": bs.with_totals(bs.bills_for_patient(request.user)) if patient else [],
+    })

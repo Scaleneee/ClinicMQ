@@ -43,8 +43,7 @@ class RegisterForm(forms.Form):
     )
     gender = forms.ChoiceField(
         label="Gender",
-        choices=[("M", "Male"), ("F", "Female")],
-        widget=forms.RadioSelect,
+        choices=[("", "Select"), ("M", "Male"), ("F", "Female")],
     )
     date_of_birth = forms.DateField(
         label="Date of birth",

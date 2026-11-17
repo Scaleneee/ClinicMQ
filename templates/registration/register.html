@@ -23,21 +23,10 @@
     {% include "_field.html" with field=form.ic_no %}
     {% include "_field.html" with field=form.full_name %}
 
+    {# Gender and date of birth share one line at every screen width. #}
     <div class="row g-3">
-      <div class="col-sm-6">
-        <div class="cmq-field{% if form.gender.errors %} has-error{% endif %}">
-          <span class="cmq-label" id="gender-label">{{ form.gender.label }}</span>
-          <div class="cmq-choice" role="radiogroup" aria-labelledby="gender-label">
-            {% for radio in form.gender %}
-              <label for="{{ radio.id_for_label }}">{{ radio.tag }}<span>{{ radio.choice_label }}</span></label>
-            {% endfor %}
-          </div>
-          {% if form.gender.errors %}<div class="cmq-error">{{ form.gender.errors }}</div>{% endif %}
-        </div>
-      </div>
-      <div class="col-sm-6">
-        {% include "_field.html" with field=form.date_of_birth %}
-      </div>
+      <div class="col-5">{% include "_field.html" with field=form.gender %}</div>
+      <div class="col-7">{% include "_field.html" with field=form.date_of_birth %}</div>
     </div>
 
     {% include "_field.html" with field=form.phone %}

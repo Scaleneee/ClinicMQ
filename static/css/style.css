@@ -266,6 +266,30 @@ a:hover { color: var(--cmq-ink-soft); }
   border-radius: var(--cmq-radius);
   outline: none;
 }
+/* iPhone Safari gives date inputs a minimum width and centred text,
+   which pushes them past the column edge. */
+.cmq-field input[type="date"] {
+  -webkit-appearance: none;
+  appearance: none;
+  min-width: 0;
+  text-align: left;
+}
+.cmq-field input[type="date"]::-webkit-date-and-time-value { text-align: left; }
+
+/* Dropdown: same look on every browser, with a chevron on the right. */
+.cmq-field select {
+  -webkit-appearance: none;
+  appearance: none;
+  padding-right: 36px;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23111111' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 14px 10px;
+  cursor: pointer;
+}
+.cmq-field select:has(option[value=""]:checked) { color: var(--cmq-muted); }
+.cmq-field select option { color: var(--cmq-ink); }
+
 .cmq-field input:focus,
 .cmq-field select:focus,
 .cmq-field textarea:focus {

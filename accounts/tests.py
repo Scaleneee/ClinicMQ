@@ -410,3 +410,32 @@ class NurseDashboardTests(DashboardTestCase):
         self.client.force_login(self.nurse.user)
         Bill.objects.all().delete()
         self.assertContains(self.client.get(reverse("dashboard")), "No unpaid bills.")
+
+
+class AdminDashboardTests(DashboardTestCase):
+    def test_admin_dashboard(self):
+        # pay the bill: revenue counts paid bills only
+        Bill.objects.filter(pk=self.bill.pk).update(status="PAID", payment_method="CASH",
+                                                    amount_paid=Decimal("50"), paid_at=timezone.now())
+        self.client.force_login(self.admin_user)
+        page = self.client.get(reverse("dashboard"))
+        self.assertContains(page, "Welcome, Kumar")
+        stats = page.context["stats"]
+        self.assertEqual((stats["patients_today"], stats["revenue_today"], stats["unpaid"], stats["low_stock"]),
+                         (4, Decimal("33.00"), 0, 1))
+        self.assertContains(page, "RM 33.00")
+        self.assertContains(page, "This week's roster")
+        self.assertContains(page, "Dr. Aisyah Rahman")
+        self.assertContains(page, "No doctor")           # e.g. tonight
+        self.assertContains(page, "B-20261104-001")       # recent bills
+        self.assertContains(page, "Cash")
+
+    def test_unpaid_bill_counts_and_no_revenue(self):
+        self.client.force_login(self.admin_user)
+        stats = self.client.get(reverse("dashboard")).context["stats"]
+        self.assertEqual((stats["unpaid"], stats["revenue_label"]), (1, "RM 0.00"))
+
+    def test_roles_get_their_own_dashboard(self):
+        self.client.force_login(self.doc.user)
+        page = self.client.get(reverse("dashboard"))
+        self.assertTemplateUsed(page, "accounts/dashboard.html")  # doctor: generic page for now

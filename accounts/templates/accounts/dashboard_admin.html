@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard · ClinicMQ{% endblock %}
+
+{% block content %}
+  <div class="cmq-page-header">
+    <div>
+      <p class="cmq-eyebrow">{% now "l, j F Y" %}</p>
+      <h1 class="cmq-title">Welcome, {{ name }}</h1>
+      <p class="cmq-subtitle">Clinic overview for today.</p>
+    </div>
+    <div class="cmq-page-actions">
+      <a class="btn btn-primary" href="{% url 'staff_create' %}"><i class="bi bi-person-plus"></i> Add staff</a>
+      <a class="btn btn-secondary" href="{% url 'roster' %}"><i class="bi bi-calendar-week"></i> Roster</a>
+    </div>
+  </div>
+
+  {# Stat cards #}
+  <div class="cmq-stat-grid">
+    {% include "_stat_card.html" with label="Patients today" value=stats.patients_today note="with a queue number" icon="people" name="queueing:board" %}
+    {% include "_stat_card.html" with label="Revenue today" value=stats.revenue_label note="from paid bills" icon="cash-stack" name="billing:sales_summary" %}
+    {% include "_stat_card.html" with label="Unpaid bills" value=stats.unpaid note="waiting for payment" icon="receipt" name="billing:bill_list" query="?status=unpaid" %}
+    {% if stats.low_stock %}
+      {% include "_stat_card.html" with label="Low stock" value=stats.low_stock note="medicines to reorder" icon="capsule" name="pharmacy:medicine_list" query="?filter=low" tone="warning" %}
+    {% else %}
+      {% include "_stat_card.html" with label="Low stock" value=stats.low_stock note="medicines to reorder" icon="capsule" name="pharmacy:medicine_list" query="?filter=low" %}
+    {% endif %}
+  </div>
+
+  {# This week's roster (preview) #}
+  <section class="cmq-card cmq-card-flush mb-4">
+    <div class="cmq-card-head">
+      <h2 class="cmq-section-title mb-0">This week's roster</h2>
+      <a href="{% url 'roster' %}">Full roster <i class="bi bi-chevron-right"></i></a>
+    </div>
+    <div class="cmq-week-preview">
+      {% for day in week %}
+        <div class="cmq-week-day {% if day.is_today %}is-today{% endif %} {% if day.is_past %}is-past{% endif %}">
+          <div class="cmq-week-day-head">{{ day.date|date:"D" }} <span class="cmq-muted">{{ day.date|date:"j" }}</span></div>
+          {% for session, shifts in day.sessions.items %}
+            <div class="cmq-week-session">
+              <div class="cmq-week-session-label">{% if session == "MORNING" %}Morning{% else %}Night{% endif %}</div>
+              {% for shift in shifts %}
+                <div class="cmq-week-name {% if shift.staff.role == 'DOCTOR' %}is-doctor{% endif %} {% if not shift.staff.is_active %}is-inactive{% endif %}">
+                  {% if shift.staff.role == "DOCTOR" %}Dr. {% endif %}{{ shift.staff.full_name }}
+                </div>
+              {% endfor %}
+              {% if session in day.no_doctor %}<div class="cmq-week-name is-warning">No doctor</div>{% endif %}
+            </div>
+          {% endfor %}
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  {# Recent bills #}
+  <section class="cmq-card cmq-card-flush">
+    <div class="cmq-card-head">
+      <h2 class="cmq-section-title mb-0">Recent bills</h2>
+      {% url "billing:bill_list" as bills_url %}{% if bills_url %}<a href="{{ bills_url }}">Billing <i class="bi bi-chevron-right"></i></a>{% endif %}
+    </div>
+    <div style="overflow-x:auto">
+      <table class="cmq-table">
+        <thead><tr><th>Bill no.</th><th>Date</th><th>Patient</th><th class="text-end">Total</th><th>Status</th><th>Method</th></tr></thead>
+        <tbody>
+          {% for b in recent_bills %}
+            <tr>
+              <td>{{ b.bill_no }}</td>
+              <td>{{ b.created_at|date:"j M Y" }}</td>
+              <td>{{ b.consultation.ticket.patient.full_name|title }}</td>
+              <td class="text-end">RM {{ b.total_amount|floatformat:2 }}</td>
+              <td>
+                {% if b.status == "PAID" %}<span class="cmq-badge cmq-badge-checked-in"><span class="cmq-badge-dot"></span>Paid</span>
+                {% elif b.status == "UNPAID" %}<span class="cmq-badge cmq-badge-waiting"><span class="cmq-badge-dot"></span>Unpaid</span>
+                {% else %}<span class="cmq-badge cmq-badge-completed"><span class="cmq-badge-dot"></span>Void</span>{% endif %}
+              </td>
+              <td>{{ b.get_payment_method_display|default:"–" }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6" class="cmq-empty-row"><i class="bi bi-receipt"></i>No bills yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock %}

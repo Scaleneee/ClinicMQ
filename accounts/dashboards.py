@@ -114,3 +114,32 @@ def nurse_dashboard(request):
         "alerts": stock_alerts(limit=5),
         "unpaid": unpaid_bills(limit=5),
     })
+
+
+# ---------------------------------------------------------------------------
+# Admin dashboard
+# ---------------------------------------------------------------------------
+def admin_dashboard(request):
+    q.run_housekeeping()
+    today = timezone.localdate()
+    seen_today = (QueueTicket.objects.filter(queue_date=today)
+                  .exclude(status__in=[QueueTicket.Status.CANCELLED, QueueTicket.Status.EXPIRED]))
+
+    week = acc.week_roster(acc.week_start(today), viewed_by=request.user)
+    for day in week:
+        day["no_doctor"] = [s for s, shifts in day["sessions"].items()
+                            if not day["is_past"] and not any(sh.staff.role == "DOCTOR" and sh.staff.is_active
+                                                              for sh in shifts)]
+
+    return render(request, "accounts/dashboard_admin.html", {
+        "name": _staff_name(request.user),
+        "stats": {
+            "patients_today": seen_today.values("patient_id").distinct().count(),
+            "revenue_today": revenue_on(today),
+            "revenue_label": f"RM {revenue_on(today):,.2f}",
+            "unpaid": Bill.objects.filter(status=Bill.Status.UNPAID).count(),
+            "low_stock": low_stock_count(),
+        },
+        "week": week,
+        "recent_bills": _with_totals(Bill.objects.order_by("-created_at")[:8]),
+    })

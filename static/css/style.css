@@ -713,3 +713,15 @@ a.cmq-stat-card:hover { background: var(--cmq-wash); color: var(--cmq-ink); bord
 .cmq-card-flush .cmq-table tr:last-child td { border-bottom: 0; }
 .cmq-list-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--cmq-line); }
 .cmq-badge-out { background: var(--cmq-red); color: #fff; }
+.cmq-week-preview { display: grid; grid-template-columns: repeat(7, minmax(110px, 1fr)); overflow-x: auto; border-top: 1px solid var(--cmq-line); }
+.cmq-week-day { padding: 12px; border-left: 1px solid var(--cmq-line); font-size: 14px; }
+.cmq-week-day:first-child { border-left: 0; }
+.cmq-week-day.is-today { background: var(--cmq-wash); box-shadow: inset 0 3px 0 var(--cmq-ink); }
+.cmq-week-day.is-past { opacity: 0.6; }
+.cmq-week-day-head { font-size: 16px; margin-bottom: 8px; }
+.cmq-week-session + .cmq-week-session { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--cmq-line); }
+.cmq-week-session-label { color: var(--cmq-muted); font-size: 12px; text-transform: none; margin-bottom: 2px; }
+.cmq-week-name { line-height: 1.35; overflow-wrap: anywhere; }
+.cmq-week-name.is-doctor { font-weight: 700; }
+.cmq-week-name.is-inactive { color: var(--cmq-muted); text-decoration: line-through; }
+.cmq-week-name.is-warning { color: #7a5c00; }

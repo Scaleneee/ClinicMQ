@@ -120,3 +120,52 @@ class EmailChangeTests(PatientTestCase):
         pending["expires"] -= 11 * 60
         with self.assertRaisesMessage(ValidationError, "expired"):
             ps.confirm_email_change(user=self.user, pending=pending, code=self.code_from_email())
+
+
+# ---------------------------------------------------------------------------
+# Screens
+# ---------------------------------------------------------------------------
+from decimal import Decimal  # noqa: E402
+
+from django.urls import reverse  # noqa: E402
+
+from accounts.models import Staff  # noqa: E402
+from consultation.models import Consultation, MedicalCertificate  # noqa: E402
+from pharmacy.models import Medicine, PrescriptionItem  # noqa: E402
+
+
+class ListAndDetailScreenTests(PatientTestCase):
+    def test_list_search_and_pagination(self):
+        for n in range(1, 26):
+            self.make_patient(n)
+        self.client.force_login(self.nurse)
+        page = self.client.get(reverse("patients:list"))
+        self.assertContains(page, "Page 1 of 2")
+        page = self.client.get(reverse("patients:list") + "?q=900105")
+        self.assertContains(page, "Patient 5")
+        self.assertContains(page, "1 result for")
+        page = self.client.get(reverse("patients:list") + "?q=zzz")
+        self.assertContains(page, "No patient matches")
+
+    def test_patients_cannot_open_staff_pages(self):
+        p = self.make_patient(1, online=True)
+        self.client.force_login(p.user)
+        self.assertEqual(self.client.get(reverse("patients:list")).status_code, 403)
+        self.assertEqual(self.client.get(reverse("patients:detail", args=[p.pk])).status_code, 403)
+
+    def test_detail_shows_visit_timeline(self):
+        p = self.make_patient(1)
+        doc = Staff.objects.create(user=self.doctor, full_name="Aisyah Rahman", role="DOCTOR", phone="012-0000000")
+        ticket = self.add_ticket(p, "COMPLETED")
+        c = Consultation.objects.create(ticket=ticket, doctor=doc, symptoms="Fever", diagnosis="Viral fever",
+                                        consult_fee=Decimal("30"))
+        med = Medicine.objects.create(name="Paracetamol 500mg", category="Analgesic", unit="tablet",
+                                      unit_price=Decimal("0.50"), quantity=100, expiry_date=dt.date(2027, 1, 1))
+        PrescriptionItem.objects.create(consultation=c, medicine=med, dosage="2 tabs 3x a day", quantity=20)
+        MedicalCertificate.objects.create(mc_no="MC-1", consultation=c, start_date=dt.date(2026, 11, 4),
+                                          days=2, reason="Fever")
+        self.client.force_login(self.doctor)
+        page = self.client.get(reverse("patients:detail", args=[p.pk]))
+        for text in ("Viral fever", "Dr. Aisyah Rahman", "Paracetamol 500mg × 20", "MC 2 days"):
+            self.assertContains(page, text)
+        self.assertNotContains(page, "Issue number")  # doctors don't issue numbers

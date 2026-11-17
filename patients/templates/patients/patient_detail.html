@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% load queue_tags %}
+
+{% block title %}{{ patient.full_name|title }} · ClinicMQ{% endblock %}
+
+{% block content %}
+  <div class="cmq-page-header">
+    <div>
+      <p class="cmq-eyebrow"><a href="{% url 'patients:list' %}"><i class="bi bi-arrow-left"></i> Patients</a></p>
+      <h1 class="cmq-title">{{ patient.full_name|title }}</h1>
+      <p class="cmq-subtitle">{{ patient.ic_no }}</p>
+    </div>
+    <div class="cmq-page-actions">
+      {% if can_edit %}
+        {% url "patients:edit" patient.pk as edit_url %}
+        {% if edit_url %}<a class="btn btn-secondary" href="{{ edit_url }}"><i class="bi bi-pencil"></i> Edit</a>{% endif %}
+      {% endif %}
+      {% if can_delete %}
+        {% url "patients:delete" patient.pk as delete_url %}
+        {% if delete_url %}<a class="btn btn-outline-danger" href="{{ delete_url }}"><i class="bi bi-trash"></i> Delete</a>{% endif %}
+      {% endif %}
+      {% if can_edit and not ticket %}
+        <a class="btn btn-primary" href="{% url 'queueing:walk_in' %}?patient={{ patient.pk }}"><i class="bi bi-ticket-perforated"></i> Issue number</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="row g-4">
+    {# Details #}
+    <div class="col-lg-5">
+      <section class="cmq-card">
+        <h2 class="cmq-section-title">Details</h2>
+        <dl class="cmq-details">
+          <dt>Gender</dt><dd>{{ patient.get_gender_display }}</dd>
+          <dt>Date of birth</dt><dd>{{ patient.date_of_birth|date:"j M Y" }}</dd>
+          <dt>Age</dt><dd>{{ patient.date_of_birth|age }}</dd>
+          <dt>Phone</dt><dd>{{ patient.phone }}</dd>
+          <dt>Email</dt><dd>{{ patient.email|default:"–" }}</dd>
+          <dt>Address</dt><dd>{{ patient.address|default:"–" }}</dd>
+          <dt>Online account</dt><dd>{% if patient.user_id %}Yes{% else %}No (walk-in only){% endif %}</dd>
+          <dt>Registered</dt><dd>{{ patient.created_at|date:"j M Y" }}</dd>
+        </dl>
+      </section>
+    </div>
+
+    <div class="col-lg-7">
+      {# Today's ticket #}
+      {% if ticket %}
+        <section class="cmq-card mb-4 d-flex align-items-center gap-3 flex-wrap">
+          <div class="cmq-ticket-no mb-0" style="font-size:48px">{{ ticket.queue_no|queue_no }}</div>
+          <div class="flex-fill">
+            <p class="cmq-eyebrow mb-1">Today's ticket</p>
+            {% status_badge ticket.status %}
+            <span class="cmq-muted ms-2">{{ ticket.get_session_display }} · {{ ticket.get_source_display }}</span>
+          </div>
+          {% url "queueing:board" as board_url %}
+          {% if board_url %}<a class="btn btn-secondary btn-sm" href="{{ board_url }}">Queue board</a>{% endif %}
+        </section>
+      {% endif %}
+
+      {# Visit history #}
+      <section class="cmq-card">
+        <h2 class="cmq-section-title">Visit history</h2>
+        {% include "patients/_visit_timeline.html" with visits=visits %}
+      </section>
+    </div>
+  </div>
+{% endblock %}

@@ -615,3 +615,21 @@ body.cmq-tv { height: 100vh; overflow: hidden; }
 .cmq-tv-checkin { font-size: 1.15em; }
 .cmq-tv-waiting { white-space: nowrap; font-size: 1.2em; }
 .cmq-tv-waiting strong { font-size: 1.6em; font-weight: 400; }
+
+/* ---------- Patients ---------- */
+.cmq-row-link { cursor: pointer; }
+.cmq-row-link a { text-decoration: none; }
+.cmq-pagination { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 16px; }
+.cmq-details { display: grid; grid-template-columns: max-content 1fr; gap: 10px 20px; margin: 0; }
+.cmq-details dt { font-weight: 400; color: var(--cmq-muted); }
+.cmq-details dd { margin: 0; }
+.cmq-timeline { list-style: none; padding: 0; margin: 0; }
+.cmq-timeline li { display: grid; grid-template-columns: 96px 1fr; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--cmq-line); }
+.cmq-timeline li:last-child { border-bottom: 0; }
+.cmq-timeline-date { color: var(--cmq-muted); font-size: 15px; }
+.cmq-timeline-meds { font-size: 15px; margin-top: 4px; }
+.cmq-tag-mc {
+  display: inline-block; margin-left: 6px; padding: 0 8px; border-radius: 999px;
+  font-size: 13px; border: 1px solid var(--cmq-line); color: var(--cmq-ink-soft);
+}
+@media (max-width: 575.98px) { .cmq-timeline li { grid-template-columns: 1fr; gap: 2px; } }

@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% load queue_tags %}
+
+{% block title %}Patients · ClinicMQ{% endblock %}
+
+{% block content %}
+  <div class="cmq-page-header">
+    <div>
+      <p class="cmq-eyebrow">{% now "l, j F Y" %}</p>
+      <h1 class="cmq-title">Patients</h1>
+      <p class="cmq-subtitle">Search by IC number, name or phone.</p>
+    </div>
+    {% if can_add %}
+      <div class="cmq-page-actions">
+        {% url "patients:create" as create_url %}
+        {% if create_url %}<a class="btn btn-primary" href="{{ create_url }}"><i class="bi bi-person-plus"></i> Add patient</a>{% endif %}
+      </div>
+    {% endif %}
+  </div>
+
+  <form method="get" class="d-flex gap-2 mb-4" role="search">
+    <div class="cmq-field flex-fill mb-0">
+      <label for="patient-q" class="visually-hidden">IC number, name or phone</label>
+      <input type="text" id="patient-q" name="q" value="{{ query }}" placeholder="IC number, name or phone">
+    </div>
+    <button type="submit" class="btn btn-secondary"><i class="bi bi-search"></i> Search</button>
+    {% if query %}<a class="btn btn-secondary" href="{% url 'patients:list' %}">Clear</a>{% endif %}
+  </form>
+
+  {% if query %}
+    <p class="cmq-muted">{{ patients|length }} result{{ patients|length|pluralize }} for "{{ query }}"</p>
+  {% endif %}
+
+  <div class="cmq-table-wrap">
+    <table class="cmq-table">
+      <thead>
+        <tr><th>Name</th><th>IC no.</th><th>Gender</th><th>Age</th><th>Phone</th><th>Last visit</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for p in patients %}
+          <tr class="cmq-row-link" onclick="location.href='{% url 'patients:detail' p.pk %}'">
+            <td><a href="{% url 'patients:detail' p.pk %}">{{ p.full_name|title }}</a>{% if p.user_id %} <i class="bi bi-phone cmq-muted" title="Has an online account"></i>{% endif %}</td>
+            <td>{{ p.ic_no }}</td>
+            <td>{{ p.get_gender_display }}</td>
+            <td>{{ p.date_of_birth|age }}</td>
+            <td>{{ p.phone }}</td>
+            <td>{% if p.last_visit %}{{ p.last_visit|date:"j M Y" }}{% else %}<span class="cmq-muted">–</span>{% endif %}</td>
+            <td class="text-end"><i class="bi bi-chevron-right cmq-muted"></i></td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="7" class="cmq-empty-row">
+              <i class="bi bi-people"></i>
+              {% if query %}
+                {% if query|length < 2 %}Type at least 2 characters to search.{% else %}No patient matches "{{ query }}".{% endif %}
+              {% else %}No patients yet.{% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% include "_pagination.html" with page_obj=page_obj %}
+{% endblock %}

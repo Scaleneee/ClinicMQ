@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}Enter code · ClinicMQ{% endblock %}
+
+{% block content %}
+<div class="cmq-narrow">
+  <p class="cmq-eyebrow"><a href="{% url 'patients:my_profile' %}"><i class="bi bi-arrow-left"></i> My profile</a></p>
+  <h1 class="cmq-title">Enter the code</h1>
+  <p class="cmq-subtitle mb-4">We sent a 6-digit code to <strong>{{ email }}</strong>. It expires in 10 minutes.</p>
+
+  <form method="post" novalidate class="cmq-card mb-3">
+    {% csrf_token %}
+    {% include "_field.html" with field=form.code %}
+    <button type="submit" class="btn btn-primary btn-lg w-100"><i class="bi bi-check2"></i> Verify and change email</button>
+  </form>
+
+  <div class="d-flex justify-content-between align-items-center">
+    <a href="{% url 'patients:change_email' %}">Send a new code</a>
+    <form method="post" action="{% url 'patients:cancel_email_change' %}">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-quiet-danger">Cancel change</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

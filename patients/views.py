@@ -4,16 +4,17 @@ Patient module screens (UI.md §5.4). Views stay thin: they call patients/servic
 """
 
 from django.contrib import messages
-from django.core.exceptions import PermissionDenied, ValidationError
+from django.core.exceptions import ObjectDoesNotExist, PermissionDenied, ValidationError
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.views.decorators.http import require_POST
 
 from accounts.decorators import role_required
 from queueing.services import get_todays_ticket
 
 from . import services as ps
-from .forms import PatientForm
+from .forms import EmailChangeForm, EmailCodeForm, PatientForm, ProfileForm
 from .models import Patient
 
 STAFF_ROLES = ("NURSE", "DOCTOR", "ADMIN")
@@ -137,3 +138,86 @@ def patient_delete(request, pk):
         "patient": patient,
         "deletable": ps.can_delete_patient(patient),
     })
+
+
+# ---------------------------------------------------------------------------
+# Patient: My profile (phone, address) and a verified email change
+# ---------------------------------------------------------------------------
+EMAIL_CHANGE_KEY = "pending_email_change"
+
+
+def _own_patient(request):
+    try:
+        return request.user.patient
+    except ObjectDoesNotExist:
+        return None
+
+
+@role_required("PATIENT")
+def my_profile(request):
+    patient = _own_patient(request)
+    form = ProfileForm(request.POST or None, initial={"phone": patient.phone, "address": patient.address}
+                       if patient else None)
+    if patient and request.method == "POST" and form.is_valid():
+        try:
+            ps.update_patient(updated_by=request.user, patient_id=patient.pk, **form.cleaned_data)
+        except ValidationError as e:
+            _add_service_errors(form, e)
+        except PermissionDenied as e:
+            messages.error(request, str(e))
+        else:
+            messages.success(request, "Your details were saved.")
+            return redirect("patients:my_profile")
+
+    return render(request, "patients/my_profile.html", {
+        "patient": patient,
+        "form": form,
+        "pending": request.session.get(EMAIL_CHANGE_KEY),
+    })
+
+
+@role_required("PATIENT")
+def change_email(request):
+    """Step 1: new email + current password -> a code is emailed to the new address."""
+    form = EmailChangeForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        try:
+            pending = ps.start_email_change(user=request.user, **form.cleaned_data)
+        except ValidationError as e:
+            _add_service_errors(form, e)
+        else:
+            request.session[EMAIL_CHANGE_KEY] = pending
+            messages.info(request, f"We sent a 6-digit code to {pending['email']}.")
+            return redirect("patients:verify_email")
+    return render(request, "patients/change_email.html", {"form": form})
+
+
+@role_required("PATIENT")
+def verify_email(request):
+    """Step 2: enter the code -> login email and patient email both change."""
+    pending = request.session.get(EMAIL_CHANGE_KEY)
+    if not pending:
+        return redirect("patients:change_email")
+
+    form = EmailCodeForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        try:
+            new_email = ps.confirm_email_change(user=request.user, pending=pending, code=form.cleaned_data["code"])
+        except ValidationError as e:
+            for message in e.messages:
+                form.add_error("code", message)
+            request.session[EMAIL_CHANGE_KEY] = pending  # keeps the tries count
+        else:
+            request.session.pop(EMAIL_CHANGE_KEY, None)
+            messages.success(request, f"Your email is now {new_email}. Use it to log in next time.")
+            return redirect("patients:my_profile")
+
+    return render(request, "patients/verify_email.html", {"form": form, "email": pending["email"]})
+
+
+@require_POST
+@role_required("PATIENT")
+def cancel_email_change(request):
+    request.session.pop(EMAIL_CHANGE_KEY, None)
+    messages.info(request, "Email change cancelled.")
+    return redirect("patients:my_profile")

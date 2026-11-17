@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}Change email · ClinicMQ{% endblock %}
+
+{% block content %}
+<div class="cmq-narrow">
+  <p class="cmq-eyebrow"><a href="{% url 'patients:my_profile' %}"><i class="bi bi-arrow-left"></i> My profile</a></p>
+  <h1 class="cmq-title">Change email</h1>
+  <p class="cmq-subtitle mb-4">We'll send a 6-digit code to your new email. Your email only changes after you enter it.</p>
+
+  <form method="post" novalidate class="cmq-card">
+    {% csrf_token %}
+    <p class="cmq-muted mb-3">Current email: <strong>{{ user.email }}</strong></p>
+    {% include "_field.html" with field=form.new_email %}
+    {% include "_field.html" with field=form.password %}
+    <button type="submit" class="btn btn-primary btn-lg w-100"><i class="bi bi-send"></i> Send code</button>
+  </form>
+</div>
+{% endblock %}

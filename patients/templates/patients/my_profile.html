@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% load queue_tags %}
+
+{% block title %}My profile · ClinicMQ{% endblock %}
+
+{% block content %}
+<div class="cmq-narrow">
+  <p class="cmq-eyebrow">{% now "l, j F Y" %}</p>
+  <h1 class="cmq-title">My profile</h1>
+  <p class="cmq-subtitle mb-4">Keep your contact details up to date.</p>
+
+  {% if not patient %}
+    <div class="cmq-alert cmq-alert-warning" role="alert">
+      <i class="bi bi-exclamation-triangle"></i>
+      <div class="cmq-alert-body">Your account isn't linked to a patient record yet. Please ask at the clinic counter.</div>
+    </div>
+  {% else %}
+
+    {# Read-only: as on the IC #}
+    <section class="cmq-card mb-4">
+      <h2 class="cmq-section-title">Personal details</h2>
+      <dl class="cmq-details">
+        <dt>Full name</dt><dd>{{ patient.full_name|title }}</dd>
+        <dt>IC number</dt><dd>{{ patient.ic_no }}</dd>
+        <dt>Gender</dt><dd>{{ patient.get_gender_display }}</dd>
+        <dt>Date of birth</dt><dd>{{ patient.date_of_birth|date:"j M Y" }} ({{ patient.date_of_birth|age }} yrs)</dd>
+      </dl>
+      <p class="cmq-hint mb-0">To correct these, please ask at the clinic counter.</p>
+    </section>
+
+    {# Contact: phone, address #}
+    <form method="post" novalidate class="cmq-card mb-4">
+      {% csrf_token %}
+      <h2 class="cmq-section-title">Contact</h2>
+      {% include "_field.html" with field=form.phone %}
+      {% include "_field.html" with field=form.address optional=True %}
+      <button type="submit" class="btn btn-primary w-100"><i class="bi bi-check2"></i> Save</button>
+    </form>
+
+    {# Email: changed with password + code #}
+    <section class="cmq-card">
+      <h2 class="cmq-section-title">Email</h2>
+      <p class="mb-1">{{ user.email }}</p>
+      <p class="cmq-hint mt-0 mb-3">You log in with this email.</p>
+      {% if pending %}
+        <div class="cmq-alert cmq-alert-info mb-3">
+          <i class="bi bi-envelope"></i>
+          <div class="cmq-alert-body">A code was sent to <strong>{{ pending.email }}</strong>.
+            <a href="{% url 'patients:verify_email' %}">Enter code</a></div>
+        </div>
+      {% endif %}
+      <a class="btn btn-secondary w-100" href="{% url 'patients:change_email' %}"><i class="bi bi-envelope"></i> Change email</a>
+    </section>
+  {% endif %}
+</div>
+{% endblock %}

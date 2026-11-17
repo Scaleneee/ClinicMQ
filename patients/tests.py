@@ -224,3 +224,47 @@ class CreateEditDeleteScreenTests(PatientTestCase):
         self.assertEqual(list(Patient.objects.values_list("pk", flat=True)), [b.pk])
         self.client.force_login(self.nurse)
         self.assertEqual(self.client.get(reverse("patients:delete", args=[b.pk])).status_code, 403)
+
+
+class MyProfileScreenTests(PatientTestCase):
+    def setUp(self):
+        super().setUp()
+        self.p = self.make_patient(1, online=True)
+        self.client.force_login(self.p.user)
+
+    def test_edit_phone_and_address_only(self):
+        page = self.client.get(reverse("patients:my_profile"))
+        self.assertContains(page, self.p.ic_no)
+        self.assertNotContains(page, 'name="full_name"')  # read-only
+        page = self.client.post(reverse("patients:my_profile"), {"phone": "0198887777", "address": "Setapak"},
+                                follow=True)
+        self.assertContains(page, "Your details were saved.")
+        self.p.refresh_from_db()
+        self.assertEqual((self.p.phone, self.p.address), ("019-8887777", "Setapak"))
+
+    def test_email_change_with_password_and_code(self):
+        page = self.client.post(reverse("patients:change_email"),
+                                {"new_email": "fresh@x.my", "password": "wrong"})
+        self.assertContains(page, "Incorrect password.")
+
+        page = self.client.post(reverse("patients:change_email"),
+                                {"new_email": "fresh@x.my", "password": "old-Pass-123"}, follow=True)
+        self.assertRedirects(page, reverse("patients:verify_email"))
+        self.assertContains(page, "We sent a 6-digit code to fresh@x.my")
+        code = [w for w in mail.outbox[-1].body.split() if w.isdigit() and len(w) == 6][0]
+
+        wrong = "000000" if code != "000000" else "111111"
+        page = self.client.post(reverse("patients:verify_email"), {"code": wrong})
+        self.assertContains(page, "Incorrect code. 4 tries left.")
+
+        page = self.client.post(reverse("patients:verify_email"), {"code": code}, follow=True)
+        self.assertContains(page, "Your email is now fresh@x.my")
+        self.p.user.refresh_from_db()
+        self.assertEqual(self.p.user.email, "fresh@x.my")
+        # log in with the new email
+        self.client.logout()
+        login = self.client.post(reverse("login"), {"username": "fresh@x.my", "password": "old-Pass-123"})
+        self.assertEqual(login.status_code, 302)
+
+    def test_verify_without_request_goes_to_step_one(self):
+        self.assertRedirects(self.client.get(reverse("patients:verify_email")), reverse("patients:change_email"))

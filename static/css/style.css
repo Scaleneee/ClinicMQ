@@ -681,3 +681,5 @@ a.cmq-chip:hover { border-color: var(--cmq-ink); color: var(--cmq-ink); }
 .cmq-chip-doctor { border-color: var(--cmq-ink); font-weight: 700; }
 .cmq-chip-inactive { color: var(--cmq-muted); text-decoration: line-through; border-style: dashed; font-weight: 400; }
 .cmq-chip-warning { background: var(--cmq-yellow-wash); border-color: var(--cmq-yellow); color: #7a5c00; }
+.cmq-roster-add { display: inline-block; font-size: 13px; color: var(--cmq-muted); text-decoration: none; }
+.cmq-roster-add:hover { color: var(--cmq-ink); text-decoration: underline; }

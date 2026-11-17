@@ -51,6 +51,10 @@
                 {% if not cell.has_doctor and not cell.day.is_past %}
                   <span class="cmq-chip cmq-chip-warning" title="Queue numbers can't be issued without a doctor">No doctor</span>
                 {% endif %}
+                {% if is_admin and not cell.day.is_past %}
+                  <a class="cmq-roster-add" href="{% url 'shift_create' %}?date={{ cell.day.date|date:'Y-m-d' }}&session={{ row.key }}&week={{ start|date:'Y-m-d' }}"
+                     aria-label="Add shift on {{ cell.day.date|date:'D j M' }} {{ row.label }}"><i class="bi bi-plus"></i> Add</a>
+                {% endif %}
               </td>
             {% endfor %}
           </tr>

@@ -10,12 +10,13 @@ import datetime as dt
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from . import services as acc
 from .decorators import role_required
-from .models import Session, Staff
-from .staff_forms import StaffForm
+from .models import Session, Shift, Staff
+from .staff_forms import ShiftForm, StaffForm
 
 STAFF_ROLES = ("NURSE", "DOCTOR", "ADMIN")
 
@@ -197,3 +198,83 @@ def roster(request):
         "start": start,
         "is_admin": request.user.role == "ADMIN",
     })
+
+
+# ---------------------------------------------------------------------------
+# Schedule: add / edit / remove shifts (admin)
+# ---------------------------------------------------------------------------
+def _staff_choices():
+    """Active staff, doctors first: [(id, "Dr. Aisyah Rahman · Doctor"), ...]"""
+    order = {Staff.Role.DOCTOR: 0, Staff.Role.NURSE: 1, Staff.Role.ADMIN: 2}
+    staff = Staff.objects.filter(is_active=True, user__is_active=True)
+    return [(s.pk, f"{acc.display_name(s)} · {s.get_role_display()}")
+            for s in sorted(staff, key=lambda s: (order[s.role], s.full_name))]
+
+
+def _roster_url_for(day):
+    from django.urls import reverse
+    return f"{reverse('roster')}?week={acc.week_start(day).isoformat()}"
+
+
+@role_required("ADMIN")
+def shift_create(request):
+    initial = {}
+    if request.GET.get("date"):
+        initial["shift_date"] = request.GET["date"]
+    if request.GET.get("session") in (Session.MORNING, Session.NIGHT):
+        initial["session"] = request.GET["session"]
+    form = ShiftForm(request.POST or None, initial=initial, staff_choices=_staff_choices())
+
+    if request.method == "POST" and form.is_valid():
+        data = form.cleaned_data
+        try:
+            shift = acc.add_shift(added_by=request.user, staff_id=data["staff"],
+                                  shift_date=data["shift_date"], session=data["session"])
+        except ValidationError as e:
+            _add_service_errors(form, e)
+        except PermissionDenied as e:
+            messages.error(request, str(e))
+        else:
+            messages.success(request, f"{acc.display_name(shift.staff)} added to {shift.shift_date:%a %d %b} "
+                                      f"({shift.get_session_display().lower()}).")
+            return redirect(_roster_url_for(shift.shift_date))
+
+    back = _roster_url_for(dt.date.fromisoformat(request.GET["week"])) if request.GET.get("week") else None
+    return render(request, "accounts/staff/shift_form.html", {"form": form, "shift": None, "back_url": back})
+
+
+@role_required("ADMIN")
+def shift_edit(request, pk):
+    shift = get_object_or_404(Shift.objects.select_related("staff"), pk=pk)
+    if shift.shift_date < timezone.localdate():
+        messages.error(request, "Past shifts are kept as history and can't be changed.")
+        return redirect(_roster_url_for(shift.shift_date))
+
+    initial = {"staff": shift.staff_id, "shift_date": shift.shift_date, "session": shift.session}
+    form = ShiftForm(request.POST or None, initial=initial, staff_choices=_staff_choices())
+    if request.method == "POST" and form.is_valid():
+        data = form.cleaned_data
+        try:
+            shift = acc.update_shift(updated_by=request.user, shift_id=shift.pk, staff_id=data["staff"],
+                                     shift_date=data["shift_date"], session=data["session"])
+        except ValidationError as e:
+            _add_service_errors(form, e)
+        except PermissionDenied as e:
+            messages.error(request, str(e))
+        else:
+            messages.success(request, "Shift saved.")
+            return redirect(_roster_url_for(shift.shift_date))
+
+    return render(request, "accounts/staff/shift_form.html", {
+        "form": form, "shift": shift, "back_url": _roster_url_for(shift.shift_date),
+    })
+
+
+@require_POST
+@role_required("ADMIN")
+def shift_delete(request, pk):
+    shift = get_object_or_404(Shift.objects.select_related("staff"), pk=pk)
+    day, name = shift.shift_date, acc.display_name(shift.staff)
+    _run(request, lambda: acc.remove_shift(removed_by=request.user, shift_id=shift.pk),
+         f"{name} removed from {day:%a %d %b}.")
+    return redirect(_roster_url_for(day))

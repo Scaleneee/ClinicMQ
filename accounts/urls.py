@@ -13,4 +13,7 @@ urlpatterns = [
     path("staff/<int:pk>/deactivate/", staff_views.staff_deactivate, name="staff_deactivate"),
     path("staff/<int:pk>/reactivate/", staff_views.staff_reactivate, name="staff_reactivate"),
     path("roster/", staff_views.roster, name="roster"),
+    path("roster/shifts/add/", staff_views.shift_create, name="shift_create"),
+    path("roster/shifts/<int:pk>/edit/", staff_views.shift_edit, name="shift_edit"),
+    path("roster/shifts/<int:pk>/remove/", staff_views.shift_delete, name="shift_delete"),
 ]

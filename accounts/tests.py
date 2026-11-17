@@ -296,3 +296,47 @@ class RosterScreenTests(StaffTestCase):
         acc.deactivate_staff(deactivated_by=self.admin_user, staff_id=self.nurse.pk)
         self.client.force_login(self.admin_user)
         self.assertContains(self.client.get(reverse("roster")), "cmq-chip-inactive")
+
+
+class ShiftScreenTests(StaffTestCase):
+    def setUp(self):
+        super().setUp()
+        self.doc = self.make_staff("Aisyah Rahman", "DOCTOR")
+        self.doc2 = self.make_staff("Tan Wei Ming", "DOCTOR")
+        self.client.force_login(self.admin_user)
+
+    def test_add_shift_from_roster_cell(self):
+        page = self.client.get(reverse("roster"))
+        self.assertContains(page, "?date=2026-11-04&session=MORNING")  # quick add link
+        page = self.client.post(reverse("shift_create"),
+                                {"staff": self.doc.pk, "shift_date": "2026-11-04", "session": "MORNING"}, follow=True)
+        self.assertContains(page, "Dr. Aisyah Rahman added to Wed 04 Nov (morning).")
+        self.assertEqual(acc.doctor_on_duty(TODAY, "MORNING"), self.doc)
+
+    def test_second_doctor_shows_ui_md_error(self):
+        self.add(self.doc)
+        page = self.client.post(reverse("shift_create"),
+                                {"staff": self.doc2.pk, "shift_date": "2026-11-04", "session": "MORNING"})
+        self.assertContains(page, "Dr. Aisyah Rahman is already on duty for this session.")
+
+    def test_edit_and_remove(self):
+        shift = self.add(self.doc)
+        page = self.client.post(reverse("shift_edit", args=[shift.pk]),
+                                {"staff": self.doc.pk, "shift_date": "2026-11-05", "session": "NIGHT"}, follow=True)
+        self.assertContains(page, "Shift saved.")
+        shift.refresh_from_db()
+        self.assertEqual((shift.shift_date, shift.session), (dt.date(2026, 11, 5), "NIGHT"))
+        page = self.client.post(reverse("shift_delete", args=[shift.pk]), follow=True)
+        self.assertContains(page, "Dr. Aisyah Rahman removed from Thu 05 Nov.")
+        self.assertFalse(Shift.objects.exists())
+
+    def test_past_shift_cannot_be_edited(self):
+        old = Shift.objects.create(staff=self.doc, shift_date=TODAY - dt.timedelta(days=1), session="MORNING")
+        page = self.client.get(reverse("shift_edit", args=[old.pk]), follow=True)
+        self.assertContains(page, "kept as history")
+
+    def test_nurse_cannot_manage_shifts(self):
+        nurse = self.make_staff("Farah Lim", "NURSE")
+        self.client.force_login(nurse.user)
+        self.assertEqual(self.client.get(reverse("shift_create")).status_code, 403)
+        self.assertNotContains(self.client.get(reverse("roster")), "Add shift")

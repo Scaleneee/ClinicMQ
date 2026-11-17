@@ -104,10 +104,10 @@
           {% url "billing:bill_list" as bills_url %}{% if bills_url %}<a href="{{ bills_url }}?status=unpaid">Billing <i class="bi bi-chevron-right"></i></a>{% endif %}
         </div>
         {% for b in unpaid %}
-          <div class="cmq-list-row">
+          <a class="cmq-list-row text-reset text-decoration-none" href="{% url 'billing:bill_detail' b.pk %}">
             <span class="flex-fill">{{ b.consultation.ticket.patient.full_name|title }}<div class="cmq-muted" style="font-size:14px">{{ b.bill_no }}</div></span>
             <strong>RM {{ b.total_amount|floatformat:2 }}</strong>
-          </div>
+          </a>
         {% empty %}
           <p class="cmq-muted mb-0"><i class="bi bi-check-circle"></i> No unpaid bills.</p>
         {% endfor %}

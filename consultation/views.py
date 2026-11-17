@@ -68,6 +68,7 @@ def consultation_detail(request, pk):
         "meds_total": meds_total,
         "total": c.consult_fee + meds_total,
         "bill": _bill_of(c),
+        "has_waiting": any(not i.dispensed for i in items),
         "can_edit": is_author,
         "can_delete": (is_author or request.user.role == "ADMIN") and cs.can_delete(c),
     })

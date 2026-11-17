@@ -45,7 +45,12 @@
 
       {# Prescription #}
       <section class="cmq-card cmq-card-flush">
-        <div class="cmq-card-head"><h2 class="cmq-section-title mb-0">Prescription</h2></div>
+        <div class="cmq-card-head">
+          <h2 class="cmq-section-title mb-0">Prescription</h2>
+          {% if user.role == "NURSE" and c.ticket.status == "COMPLETED" and has_waiting %}
+            <a href="{% url 'pharmacy:dispense_detail' c.pk %}">Dispense <i class="bi bi-chevron-right"></i></a>
+          {% endif %}
+        </div>
         <div style="overflow-x:auto">
           <table class="cmq-table">
             <thead><tr><th>Medicine</th><th>Dosage</th><th class="text-end">Qty</th><th class="text-end">Amount</th><th>Status</th></tr></thead>
@@ -97,13 +102,16 @@
         <div class="cmq-money-row is-total"><span>Total</span><span>RM {{ total|floatformat:2 }}</span></div>
         {% if bill %}
           <p class="mb-0 mt-3">
-            Bill {{ bill.bill_no }}
+            Bill {% if user.role == "NURSE" or user.role == "ADMIN" %}<a href="{% url 'billing:bill_detail' bill.pk %}">{{ bill.bill_no }}</a>{% else %}{{ bill.bill_no }}{% endif %}
             {% if bill.status == "PAID" %}<span class="cmq-badge cmq-badge-checked-in"><span class="cmq-badge-dot"></span>Paid</span>
             {% elif bill.status == "UNPAID" %}<span class="cmq-badge cmq-badge-waiting"><span class="cmq-badge-dot"></span>Unpaid</span>
             {% else %}<span class="cmq-badge cmq-badge-completed"><span class="cmq-badge-dot"></span>Void</span>{% endif %}
           </p>
         {% else %}
           <p class="cmq-muted mb-0 mt-3">Not billed yet.</p>
+          {% if user.role == "NURSE" and c.ticket.status == "COMPLETED" %}
+            <a class="btn btn-primary w-100 mt-3" href="{% url 'billing:bill_create' c.pk %}"><i class="bi bi-receipt"></i> Generate bill</a>
+          {% endif %}
         {% endif %}
       </section>
     </div>

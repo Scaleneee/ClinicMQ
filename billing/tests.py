@@ -347,3 +347,18 @@ class SalesSummaryPageTests(BillingTestCase):
     def test_nurse_cannot_see_summary(self):
         self.client.force_login(self.nurse.user)
         self.assertEqual(self.client.get("/billing/sales/").status_code, 403)
+
+
+class IntegrationTests(BillingTestCase):
+    def test_links_between_modules(self):
+        c = self.visit([(self.para, 20)])
+        self.client.force_login(self.nurse.user)
+        page = self.client.get(f"/consultation/{c.pk}/")
+        self.assertContains(page, f"/billing/new/{c.pk}/")      # Generate bill
+        self.assertContains(page, f"/pharmacy/dispense/{c.pk}/")  # Dispense
+        bill = bs.create_bill(created_by=self.nurse.user, consultation_id=c.pk)
+        self.assertContains(self.client.get(f"/consultation/{c.pk}/"), f"/billing/{bill.pk}/")
+        page = self.client.get("/accounts/dashboard/")
+        self.assertContains(page, f"/billing/{bill.pk}/")         # unpaid bill on the nurse dashboard
+        self.client.force_login(self.admin.user)
+        self.assertContains(self.client.get("/accounts/dashboard/"), f"/billing/{bill.pk}/")

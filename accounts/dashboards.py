@@ -14,7 +14,7 @@ from django.shortcuts import render
 from django.utils import timezone
 
 from billing.models import Bill, BillItem
-from pharmacy.models import Medicine, PrescriptionItem
+from pharmacy.models import Medicine
 from queueing import services as q
 from queueing.models import QueueTicket
 
@@ -56,9 +56,10 @@ def low_stock_count():
 
 
 def to_dispense_count():
-    """Consultations with prescription items that haven't been dispensed yet."""
-    return (PrescriptionItem.objects.filter(dispensed=False)
-            .values("consultation_id").distinct().count())
+    """Completed visits with medicines not dispensed yet (the same list as the Dispense page)."""
+    from pharmacy.services import pending_dispense
+
+    return pending_dispense().count()
 
 
 def _with_totals(bills):

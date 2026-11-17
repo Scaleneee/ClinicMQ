@@ -64,8 +64,8 @@
         <thead><tr><th>Bill no.</th><th>Date</th><th>Patient</th><th class="text-end">Total</th><th>Status</th><th>Method</th></tr></thead>
         <tbody>
           {% for b in recent_bills %}
-            <tr>
-              <td>{{ b.bill_no }}</td>
+            <tr class="cmq-row-link" onclick="location.href='{% url 'billing:bill_detail' b.pk %}'">
+              <td><a href="{% url 'billing:bill_detail' b.pk %}">{{ b.bill_no }}</a></td>
               <td>{{ b.created_at|date:"j M Y" }}</td>
               <td>{{ b.consultation.ticket.patient.full_name|title }}</td>
               <td class="text-end">RM {{ b.total_amount|floatformat:2 }}</td>

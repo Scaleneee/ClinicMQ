@@ -560,3 +560,15 @@ a.cmq-link-row:hover { background: var(--cmq-wash); color: var(--cmq-ink); }
   .cmq-print-ticket, .cmq-print-ticket * { visibility: visible; }
   .cmq-print-ticket { position: absolute; left: 0; top: 0; margin: 0; border: 0; }
 }
+
+/* ---------- Doctor console ---------- */
+.cmq-stats-sm { max-width: 480px; }
+.cmq-stats-sm .cmq-stat-value { font-size: 22px; }
+.cmq-console { text-align: center; padding: 32px 24px; }
+.cmq-console-idle { padding: 48px 0 24px; color: var(--cmq-muted); }
+.cmq-console-idle .bi { font-size: 44px; display: block; margin-bottom: 8px; }
+.cmq-console-next { border-top: 1px solid var(--cmq-line); }
+.cmq-next-list { list-style: none; padding: 0; margin: 0; }
+.cmq-next-list li { display: flex; align-items: baseline; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--cmq-line); }
+.cmq-next-list li:last-child { border-bottom: 0; }
+.cmq-next-no { font-size: 22px; min-width: 48px; }

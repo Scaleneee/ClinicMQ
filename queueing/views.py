@@ -269,3 +269,63 @@ def walkin_ticket(request, ticket_id):
         "status_url": status_url,
         "cs": ClinicSetting.load(),
     })
+
+
+# ---------------------------------------------------------------------------
+# Doctor console
+# ---------------------------------------------------------------------------
+CONSOLE_ACTIONS = {
+    # action: (service call, success message)
+    "call_next": (lambda r, tid: q.call_next(called_by=r.user),
+                  lambda t: f"Calling {t.queue_no:03d}."),
+    "call_again": (lambda r, tid: q.call_again(called_by=r.user, ticket_id=tid),
+                   lambda t: f"Called {t.queue_no:03d} again."),
+    "start": (lambda r, tid: q.start_consultation(started_by=r.user, ticket_id=tid),
+              lambda t: f"Consultation with {t.queue_no:03d} started."),
+    "complete": (lambda r, tid: q.complete_ticket(completed_by=r.user, ticket_id=tid),
+                 lambda t: f"Visit {t.queue_no:03d} completed."),
+    "no_show": (lambda r, tid: q.mark_no_show(marked_by=r.user, ticket_id=tid),
+                lambda t: f"{t.queue_no:03d} marked as {'cancelled (second miss)' if t.status == Status.CANCELLED else 'missed'}."),
+}
+
+
+def _console_context():
+    o = q.queue_overview()
+    serving = o["now_serving"]
+    if serving:
+        serving = QueueTicket.objects.select_related("patient").get(pk=serving.pk)
+    line = list(q.waiting_line(o["date"], o["session"]).select_related("patient")[:5])
+    setting = ClinicSetting.load()
+    return {
+        "o": o,
+        "serving": serving,
+        "line": line,
+        "next_ticket": line[0] if line else None,
+        "stats": q.doctor_stats(o["date"], o["session"]),
+        "miss_timeout_min": setting.miss_timeout_min,
+    }
+
+
+@role_required(*STAFF_ROLES)
+def console(request):
+    q.run_housekeeping()
+    return render(request, "queueing/console.html", _console_context())
+
+
+@role_required(*STAFF_ROLES)
+def console_live(request):
+    """The console body, refreshed every 5 seconds (HTMX)."""
+    q.run_housekeeping()
+    return render(request, "queueing/_console_live.html", _console_context())
+
+
+@require_POST
+@role_required(*STAFF_ROLES)
+def console_action(request, action):
+    if action not in CONSOLE_ACTIONS:
+        messages.error(request, "Unknown action.")
+        return redirect("queueing:console")
+    call, success = CONSOLE_ACTIONS[action]
+    ticket_id = request.POST.get("ticket")
+    _run(request, lambda: call(request, int(ticket_id) if ticket_id and ticket_id.isdigit() else None), success)
+    return redirect("queueing:console")

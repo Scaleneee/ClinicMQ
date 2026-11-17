@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}Doctor console · ClinicMQ{% endblock %}
+
+{% block content %}
+  <div class="cmq-page-header mb-4">
+    <div>
+      <p class="cmq-eyebrow">{% now "l, j F Y" %}</p>
+      <h1 class="cmq-title">Doctor console</h1>
+      <p class="cmq-subtitle">
+        {{ o.session_label }} session{% if not o.is_open %} (closed){% endif %}
+        · {% if o.doctor %}Dr. {{ o.doctor.full_name }}{% else %}No doctor on duty{% endif %}
+      </p>
+    </div>
+  </div>
+
+  {% include "queueing/_console_live.html" %}
+{% endblock %}

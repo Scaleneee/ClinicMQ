@@ -1,0 +1,103 @@
+{% load queue_tags %}
+{# Doctor console body. Reloads every 5 seconds, except while a confirm dialog is open. #}
+<div id="console-live"
+     hx-get="{% url 'queueing:console_live' %}"
+     hx-trigger="every 5s [!document.querySelector('.modal.show')]"
+     hx-swap="outerHTML">
+
+  {# Small stats #}
+  <div class="cmq-stats cmq-stats-sm mb-4">
+    <div class="cmq-stat"><div class="cmq-stat-label">Waiting</div><div class="cmq-stat-value">{{ stats.waiting }}</div></div>
+    <div class="cmq-stat"><div class="cmq-stat-label">Seen</div><div class="cmq-stat-value">{{ stats.seen }}</div></div>
+    <div class="cmq-stat"><div class="cmq-stat-label">Avg. time</div><div class="cmq-stat-value">{{ stats.avg_consult_min }} min</div></div>
+  </div>
+
+  <div class="row g-4">
+    {# Now serving #}
+    <div class="col-lg-8">
+      <section class="cmq-card cmq-console">
+        {% if serving %}
+          <p class="cmq-eyebrow mb-1">Now serving</p>
+          <div class="cmq-ticket-no cmq-ticket-no-xl">{{ serving.queue_no|queue_no }}</div>
+          <div class="mb-3">{% status_badge serving.status %}</div>
+          <h2 class="cmq-section-title mb-1">{{ serving.patient.full_name|title }}</h2>
+          <p class="cmq-muted mb-4">
+            {{ serving.patient.date_of_birth|age }} yrs · {{ serving.patient.get_gender_display }} · {{ serving.patient.ic_no }}
+          </p>
+
+          {% if serving.status == "CALLED" %}
+            <p class="cmq-hint mb-3">
+              Called at {{ serving.called_at|time:"g:i A" }}. Marked as missed if not started within {{ miss_timeout_min }} minutes.
+            </p>
+            <div class="d-flex flex-wrap gap-2 justify-content-center">
+              <form method="post" action="{% url 'queueing:console_action' 'start' %}">
+                {% csrf_token %}<input type="hidden" name="ticket" value="{{ serving.pk }}">
+                <button type="submit" class="btn btn-primary btn-lg"><i class="bi bi-play-fill"></i> Start</button>
+              </form>
+              <form method="post" action="{% url 'queueing:console_action' 'call_again' %}">
+                {% csrf_token %}<input type="hidden" name="ticket" value="{{ serving.pk }}">
+                <button type="submit" class="btn btn-secondary btn-lg"><i class="bi bi-megaphone"></i> Call again</button>
+              </form>
+              <form method="post" action="{% url 'queueing:console_action' 'no_show' %}"
+                    data-confirm-title="Mark {{ serving.queue_no|queue_no }} as a no-show?"
+                    data-confirm-text="{% if serving.miss_count %}This is their second miss, so the number will be cancelled.{% else %}They can check in again once and go after the next patients.{% endif %}"
+                    data-confirm-button="No show">
+                {% csrf_token %}<input type="hidden" name="ticket" value="{{ serving.pk }}">
+                <button type="submit" class="btn btn-outline-danger btn-lg"><i class="bi bi-person-x"></i> No show</button>
+              </form>
+            </div>
+
+          {% elif serving.status == "IN_CONSULTATION" %}
+            <p class="cmq-hint mb-3">Started at {{ serving.started_at|time:"g:i A" }}.</p>
+            <div class="d-flex flex-wrap gap-2 justify-content-center">
+              {# Consultation module: switches on when consultation:create exists #}
+              <div>{% include "_action_link.html" with name="consultation:create" label="Write notes" icon="pencil-square" css="btn btn-secondary btn-lg" %}</div>
+              <form method="post" action="{% url 'queueing:console_action' 'complete' %}">
+                {% csrf_token %}<input type="hidden" name="ticket" value="{{ serving.pk }}">
+                <button type="submit" class="btn btn-success btn-lg"><i class="bi bi-check2-circle"></i> Complete</button>
+              </form>
+            </div>
+          {% endif %}
+
+        {% else %}
+          <div class="cmq-console-idle">
+            <i class="bi bi-cup-hot" aria-hidden="true"></i>
+            <p class="mb-0">No one with you.</p>
+          </div>
+        {% endif %}
+
+        {# Call next #}
+        <form method="post" action="{% url 'queueing:console_action' 'call_next' %}" class="mt-4 pt-4 cmq-console-next">
+          {% csrf_token %}
+          {% if next_ticket and not serving %}
+            <button type="submit" class="btn btn-primary btn-lg w-100"><i class="bi bi-arrow-right-circle"></i> Call next · {{ next_ticket.queue_no|queue_no }}</button>
+          {% else %}
+            <button type="submit" class="btn btn-secondary btn-lg w-100" disabled>
+              {% if not next_ticket %}No one waiting{% else %}Call next · {{ next_ticket.queue_no|queue_no }}{% endif %}
+            </button>
+            {% if serving and next_ticket %}<p class="cmq-hint text-center mb-0">Finish the current patient first.</p>{% endif %}
+          {% endif %}
+        </form>
+      </section>
+    </div>
+
+    {# Next in line #}
+    <div class="col-lg-4">
+      <section class="cmq-card">
+        <h2 class="cmq-section-title">Next in line</h2>
+        <ol class="cmq-next-list">
+          {% for t in line %}
+            <li>
+              <span class="cmq-next-no">{{ t.queue_no|queue_no }}</span>
+              <span class="flex-fill">{{ t.patient.full_name|title }}{% if t.rejoined or t.position != t.queue_no %}<span class="cmq-tag-late">Late</span>{% endif %}</span>
+              <span class="cmq-muted">{{ t.checked_in_at|time:"g:i A" }}</span>
+            </li>
+          {% empty %}
+            <li class="cmq-muted justify-content-center">No one is checked in.</li>
+          {% endfor %}
+        </ol>
+      </section>
+      <p class="mt-3 mb-0"><span class="cmq-live">Live · updates every 5 seconds</span></p>
+    </div>
+  </div>
+</div>

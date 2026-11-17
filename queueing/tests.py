@@ -421,3 +421,39 @@ class NurseScreenTests(ScreenTestCase):
         # Second time: already has a number
         page = self.client.get(reverse("queueing:walk_in") + f"?patient={p.pk}")
         self.assertContains(page, "Already has number")
+
+
+class DoctorConsoleTests(ScreenTestCase):
+    def post(self, action, ticket=None):
+        data = {"ticket": ticket.pk} if ticket else {}
+        return self.client.post(reverse("queueing:console_action", args=[action]), data, follow=True)
+
+    def test_idle_then_full_visit(self):
+        t = self.check_in(self.take(1, now=at(9, 30)), at(9, 40))
+        self.login(self.doctor_user)
+        page = self.client.get(reverse("queueing:console"))
+        self.assertContains(page, "No one with you")
+        self.assertContains(page, "Call next · 001")
+
+        self.assertContains(self.post("call_next"), "Calling 001.")
+        page = self.post("start", t)
+        self.assertContains(page, "Consultation with 001 started.")
+        self.assertContains(page, "Write notes")
+        self.assertContains(self.post("complete", t), "Visit 001 completed.")
+        t.refresh_from_db()
+        self.assertEqual(t.status, "COMPLETED")
+
+    def test_call_next_blocked_while_busy(self):
+        a = self.check_in(self.take(1, now=at(9, 30)), at(9, 40))
+        self.check_in(self.take(2, now=at(9, 31)), at(9, 41))
+        self.login(self.doctor_user)
+        self.post("call_next")
+        page = self.client.get(reverse("queueing:console"))
+        self.assertContains(page, "Finish the current patient first")
+        self.assertContains(self.post("call_next"), "Patient 001 has been called")
+        self.assertContains(self.post("no_show", a), "001 marked as missed.")
+
+    def test_patients_cannot_open_console(self):
+        self.patient(1)
+        self.login(self.users[1])
+        self.assertEqual(self.client.get(reverse("queueing:console")).status_code, 403)

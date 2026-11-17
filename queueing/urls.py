@@ -21,4 +21,8 @@ urlpatterns = [
     path("board/<int:ticket_id>/cancel/", views.board_cancel, name="board_cancel"),
     path("walk-in/", views.walk_in, name="walk_in"),
     path("walk-in/<int:ticket_id>/ticket/", views.walkin_ticket, name="walkin_ticket"),
+    # Doctor console
+    path("console/", views.console, name="console"),
+    path("console/live/", views.console_live, name="console_live"),
+    path("console/<str:action>/", views.console_action, name="console_action"),
 ]

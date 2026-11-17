@@ -40,7 +40,7 @@ def normalize_ic(raw: str) -> str:
         return f"{digits[:6]}-{digits[6:8]}-{digits[8:]}"
 
     # invalid ic
-    return (raw or "").strip
+    return (raw or "").strip()
 
 # Phone number
 def normalize_phone(raw: str) -> str:
@@ -50,10 +50,10 @@ def normalize_phone(raw: str) -> str:
 
     # valid phone length
     if digits.startswith("01") and len(digits) in (10, 11):
-        return f"{digits[:3]-digits[3:]}"
+        return f"{digits[:3]}-{digits[3:]}"
 
     # invalid phone
-    return (raw or "").strip
+    return (raw or "").strip()
 
 # Name
 def normalize_name(raw: str) -> str:

@@ -623,16 +623,30 @@ body.cmq-tv { height: 100vh; overflow: hidden; }
 .cmq-details { display: grid; grid-template-columns: max-content 1fr; gap: 10px 20px; margin: 0; }
 .cmq-details dt { font-weight: 400; color: var(--cmq-muted); }
 .cmq-details dd { margin: 0; }
+/* Visit timeline: vertical line, hollow circle per visit, one row per medicine */
 .cmq-timeline { list-style: none; padding: 0; margin: 0; }
-.cmq-timeline li { display: grid; grid-template-columns: 96px 1fr; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--cmq-line); }
-.cmq-timeline li:last-child { border-bottom: 0; }
-.cmq-timeline-date { color: var(--cmq-muted); font-size: 15px; }
-.cmq-timeline-meds { font-size: 15px; margin-top: 4px; }
+.cmq-timeline > li { position: relative; padding: 0 0 44px 54px; }
+.cmq-timeline > li:last-child { padding-bottom: 4px; }
+.cmq-timeline > li::before {          /* the line */
+  content: ""; position: absolute; left: 10px; top: 0; bottom: 0;
+  width: 1px; background: var(--cmq-line);
+}
+.cmq-timeline > li:first-child::before { top: 12px; }
+.cmq-timeline > li::after {           /* the circle */
+  content: ""; position: absolute; left: 0; top: 2px;
+  width: 21px; height: 21px; border-radius: 50%;
+  border: 2.5px solid var(--cmq-ink); background: var(--cmq-paper);
+}
+.cmq-timeline-date { color: var(--cmq-muted); font-size: 16px; }
+.cmq-timeline-title { font-size: 24px; font-weight: 700; line-height: 1.25; margin: 4px 0 6px; }
+.cmq-timeline-doctor { color: var(--cmq-muted); font-size: 16px; }
+.cmq-timeline-meds { list-style: none; padding: 0; margin: 18px 0 0; font-size: 16px; }
+.cmq-timeline-meds li { padding: 10px 0; border-bottom: 1px solid var(--cmq-line); }
+.cmq-timeline-meds i { color: var(--cmq-muted); margin-right: 10px; }
 .cmq-tag-mc {
   display: inline-block; margin-left: 6px; padding: 0 8px; border-radius: 999px;
   font-size: 13px; border: 1px solid var(--cmq-line); color: var(--cmq-ink-soft);
 }
-@media (max-width: 575.98px) { .cmq-timeline li { grid-template-columns: 1fr; gap: 2px; } }
 .cmq-form-page { max-width: 820px; margin: 0 auto; }
 .cmq-field textarea { min-height: 72px; resize: vertical; }
 #id_code { font-size: 24px; letter-spacing: 6px; text-align: center; }

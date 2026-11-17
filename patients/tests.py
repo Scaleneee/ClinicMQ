@@ -167,7 +167,7 @@ class ListAndDetailScreenTests(PatientTestCase):
                                           days=2, reason="Fever")
         self.client.force_login(self.doctor)
         page = self.client.get(reverse("patients:detail", args=[p.pk]))
-        for text in ("Viral fever", "Dr. Aisyah Rahman", "Paracetamol 500mg × 20", "MC 2 days"):
+        for text in ("Viral fever", "Dr. Aisyah Rahman", "Paracetamol 500mg", "· 2 tabs 3x a day", "MC 2 days"):
             self.assertContains(page, text)
         self.assertNotContains(page, "Issue number")  # doctors don't issue numbers
 

@@ -14,9 +14,7 @@
       <div class="cmq-alert-body">Your account isn't linked to a patient record yet. Please ask at the clinic counter.</div>
     </div>
   {% else %}
-    <section class="cmq-card">
-      {% include "patients/_visit_timeline.html" with visits=visits %}
-    </section>
+    {% include "patients/_visit_timeline.html" with visits=visits %}
   {% endif %}
 </div>
 {% endblock %}

@@ -1,28 +1,29 @@
 {% comment %}
-  Vertical visit timeline (UI.md §5.6): date, diagnosis, doctor, medicines, MC tag.
+  Vertical visit timeline (UI.md §5.6): date, diagnosis, doctor, medicines with dosage, MC tag.
   Used by the patient detail page (staff) and My visits (patient).
 {% endcomment %}
 {% if visits %}
   <ol class="cmq-timeline">
     {% for v in visits %}
       <li>
-        <div class="cmq-timeline-date">{{ v.created_at|date:"j M Y" }}</div>
-        <div class="cmq-timeline-body">
-          <strong>{{ v.diagnosis }}</strong>
+        <div class="cmq-timeline-date">{{ v.created_at|date:"j F Y" }}</div>
+        <h3 class="cmq-timeline-title">{{ v.diagnosis }}</h3>
+        <div class="cmq-timeline-doctor">
+          Dr. {{ v.doctor.full_name }}
           {% if v.medical_certificate %}
             <a class="cmq-tag-mc" href="{% url 'consultation:mc_pdf' v.pk %}" target="_blank" rel="noopener"
                title="Open MC {{ v.medical_certificate.mc_no }} (PDF)"><i class="bi bi-file-earmark-pdf"></i> MC {{ v.medical_certificate.days }} day{{ v.medical_certificate.days|pluralize }}</a>
           {% endif %}
-          <div class="cmq-muted">Dr. {{ v.doctor.full_name }} · {{ v.ticket.get_session_display }} session</div>
-          {% with items=v.prescription_items.all %}
-            {% if items %}
-              <div class="cmq-timeline-meds">
-                <i class="bi bi-capsule"></i>
-                {% for item in items %}{{ item.medicine.name }} × {{ item.quantity }}{% if not forloop.last %}, {% endif %}{% endfor %}
-              </div>
-            {% endif %}
-          {% endwith %}
         </div>
+        {% with items=v.prescription_items.all %}
+          {% if items %}
+            <ul class="cmq-timeline-meds">
+              {% for item in items %}
+                <li><i class="bi bi-capsule" aria-hidden="true"></i>{{ item.medicine.name }}{% if item.dosage %} <span class="cmq-muted">· {{ item.dosage }}</span>{% endif %}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        {% endwith %}
       </li>
     {% endfor %}
   </ol>

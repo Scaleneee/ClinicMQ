@@ -29,7 +29,8 @@ class PatientTestCase(TestCase):
         if online:
             user = User.objects.create_user(username=f"p{n}@x.my", email=f"p{n}@x.my",
                                             password="old-Pass-123", role="PATIENT")
-        data = dict(user=user, ic_no=f"9001{n:02d}-14-56{n:02d}", full_name=f"PATIENT {n}", gender="F",
+        data = dict(user=user, ic_no=f"9001{n:02d}-14-56{n:02d}", full_name=f"PATIENT {n}",
+                    gender="M" if n % 2 else "F",  # last IC digit: odd = male, even = female
                     date_of_birth=dt.date(1990, 1, n), phone="012-3456789",
                     email=user.email if user else None)
         data.update(extra)
@@ -169,3 +170,57 @@ class ListAndDetailScreenTests(PatientTestCase):
         for text in ("Viral fever", "Dr. Aisyah Rahman", "Paracetamol 500mg × 20", "MC 2 days"):
             self.assertContains(page, text)
         self.assertNotContains(page, "Issue number")  # doctors don't issue numbers
+
+
+class CreateEditDeleteScreenTests(PatientTestCase):
+    VALID = {"ic_no": "900101145678", "full_name": "siti nurhaliza", "gender": "F",
+             "date_of_birth": "1990-01-01", "phone": "0123456789", "email": "", "address": "Setapak"}
+
+    def test_nurse_adds_patient(self):
+        self.client.force_login(self.nurse)
+        page = self.client.post(reverse("patients:create"), self.VALID, follow=True)
+        p = Patient.objects.get()
+        self.assertEqual((p.ic_no, p.full_name, p.phone), ("900101-14-5678", "SITI NURHALIZA", "012-3456789"))
+        self.assertContains(page, "Siti Nurhaliza was registered.")
+
+    def test_add_shows_service_errors(self):
+        self.make_patient(1)  # IC 900101-14-5601
+        self.client.force_login(self.nurse)
+        page = self.client.post(reverse("patients:create"), {**self.VALID, "ic_no": "900101-14-5601"})
+        self.assertContains(page, "already registered")
+        page = self.client.post(reverse("patients:create"), {**self.VALID, "date_of_birth": "1990-01-02",
+                                                             "gender": "M"})
+        self.assertContains(page, "does not match IC")
+
+    def test_add_from_walk_in_goes_back_with_patient_selected(self):
+        self.client.force_login(self.nurse)
+        page = self.client.post(reverse("patients:create"), {**self.VALID, "next": "walk_in"})
+        self.assertRedirects(page, reverse("queueing:walk_in") + f"?patient={Patient.objects.get().pk}",
+                             fetch_redirect_response=False)
+
+    def test_edit_keeps_linked_login_email(self):
+        p = self.make_patient(1, online=True)
+        self.client.force_login(self.nurse)
+        data = {"ic_no": p.ic_no, "full_name": "Patient One", "gender": p.gender, "date_of_birth": "1990-01-01",
+                "phone": "019-8887777", "email": "hacker@x.my", "address": ""}
+        page = self.client.post(reverse("patients:edit", args=[p.pk]), data, follow=True)
+        self.assertContains(page, "Patient details saved.")
+        p.refresh_from_db()
+        self.assertEqual((p.full_name, p.phone, p.email), ("PATIENT ONE", "019-8887777", "p1@x.my"))
+
+    def test_doctor_cannot_add_or_edit(self):
+        p = self.make_patient(1)
+        self.client.force_login(self.doctor)
+        self.assertEqual(self.client.get(reverse("patients:create")).status_code, 403)
+        self.assertEqual(self.client.get(reverse("patients:edit", args=[p.pk])).status_code, 403)
+
+    def test_admin_delete_and_blocked_state(self):
+        a, b = self.make_patient(1), self.make_patient(2)
+        self.add_ticket(b)
+        self.client.force_login(self.admin)
+        self.assertContains(self.client.get(reverse("patients:delete", args=[b.pk])), "has visits and cannot be deleted")
+        page = self.client.post(reverse("patients:delete", args=[a.pk]), follow=True)
+        self.assertContains(page, "Patient 1 was deleted.")
+        self.assertEqual(list(Patient.objects.values_list("pk", flat=True)), [b.pk])
+        self.client.force_login(self.nurse)
+        self.assertEqual(self.client.get(reverse("patients:delete", args=[b.pk])).status_code, 403)

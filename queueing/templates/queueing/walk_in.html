@@ -14,7 +14,7 @@
       </p>
     </div>
     <div class="cmq-page-actions">
-      {% include "_action_link.html" with name="patients:create" label="New patient" icon="person-plus" css="btn btn-secondary" %}
+      <a class="btn btn-secondary" href="{% url 'patients:create' %}?next=walk_in"><i class="bi bi-person-plus"></i> New patient</a>
     </div>
   </div>
 

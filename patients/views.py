@@ -3,13 +3,17 @@ patients/views.py
 Patient module screens (UI.md §5.4). Views stay thin: they call patients/services.py.
 """
 
+from django.contrib import messages
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.paginator import Paginator
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 
 from accounts.decorators import role_required
 from queueing.services import get_todays_ticket
 
 from . import services as ps
+from .forms import PatientForm
 from .models import Patient
 
 STAFF_ROLES = ("NURSE", "DOCTOR", "ADMIN")
@@ -51,5 +55,85 @@ def patient_detail(request, pk):
         "visits": ps.patient_visits(patient),
         "can_edit": request.user.role in DESK_ROLES,
         "can_delete": request.user.role == "ADMIN",
+        "deletable": ps.can_delete_patient(patient),
+    })
+
+
+def _add_service_errors(form, error):
+    """Show a ValidationError from a service under the matching form fields."""
+    if hasattr(error, "error_dict"):
+        for field, field_messages in error.message_dict.items():
+            target = field if field in form.fields else None
+            for message in field_messages:
+                form.add_error(target, message)
+    else:
+        for message in error.messages:
+            form.add_error(None, message)
+
+
+# ---------------------------------------------------------------------------
+# Create / update (nurse, admin), delete (admin)
+# ---------------------------------------------------------------------------
+@role_required(*DESK_ROLES)
+def patient_create(request):
+    back_to_walk_in = (request.GET.get("next") or request.POST.get("next")) == "walk_in"
+    form = PatientForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        try:
+            patient = ps.register_patient(registered_by=request.user, **form.cleaned_data)
+        except ValidationError as e:
+            _add_service_errors(form, e)
+        except PermissionDenied as e:
+            messages.error(request, str(e))
+        else:
+            messages.success(request, f"{patient.full_name.title()} was registered.")
+            if back_to_walk_in:
+                return redirect(f"{reverse('queueing:walk_in')}?patient={patient.pk}")
+            return redirect("patients:detail", pk=patient.pk)
+
+    return render(request, "patients/patient_form.html", {
+        "form": form, "patient": None, "back_to_walk_in": back_to_walk_in,
+    })
+
+
+@role_required(*DESK_ROLES)
+def patient_edit(request, pk):
+    patient = get_object_or_404(Patient, pk=pk)
+    linked = patient.user_id is not None
+    initial = {f: getattr(patient, f) for f in ("ic_no", "full_name", "gender", "date_of_birth",
+                                                "phone", "email", "address")}
+    initial["full_name"] = patient.full_name.title()
+    form = PatientForm(request.POST or None, initial=initial, linked_account=linked)
+
+    if request.method == "POST" and form.is_valid():
+        changes = {f: v for f, v in form.cleaned_data.items() if not (f == "email" and linked)}
+        try:
+            ps.update_patient(updated_by=request.user, patient_id=patient.pk, **changes)
+        except ValidationError as e:
+            _add_service_errors(form, e)
+        except PermissionDenied as e:
+            messages.error(request, str(e))
+        else:
+            messages.success(request, "Patient details saved.")
+            return redirect("patients:detail", pk=patient.pk)
+
+    return render(request, "patients/patient_form.html", {"form": form, "patient": patient})
+
+
+@role_required("ADMIN")
+def patient_delete(request, pk):
+    patient = get_object_or_404(Patient.objects.select_related("user"), pk=pk)
+    if request.method == "POST":
+        name = patient.full_name.title()
+        try:
+            ps.delete_patient(deleted_by=request.user, patient_id=patient.pk)
+        except (ValidationError, PermissionDenied) as e:
+            messages.error(request, " ".join(getattr(e, "messages", [str(e)])))
+            return redirect("patients:delete", pk=patient.pk)
+        messages.success(request, f"{name} was deleted.")
+        return redirect("patients:list")
+
+    return render(request, "patients/patient_confirm_delete.html", {
+        "patient": patient,
         "deletable": ps.can_delete_patient(patient),
     })

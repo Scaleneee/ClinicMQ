@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Delete patient · ClinicMQ{% endblock %}
+
+{% block content %}
+<div class="cmq-narrow">
+  <p class="cmq-eyebrow"><a href="{% url 'patients:detail' patient.pk %}"><i class="bi bi-arrow-left"></i> {{ patient.full_name|title }}</a></p>
+
+  <section class="cmq-card text-center">
+    {% if deletable %}
+      <div class="cmq-auth-icon is-danger"><i class="bi bi-trash"></i></div>
+      <h1 class="cmq-auth-title mb-2">Delete {{ patient.full_name|title }}?</h1>
+      <p class="cmq-muted mb-4">
+        {{ patient.ic_no }}. This can't be undone.
+        {% if patient.user_id %}Their online account ({{ patient.user.email }}) will be deleted too.{% endif %}
+      </p>
+      <form method="post" class="d-flex gap-2 justify-content-center">
+        {% csrf_token %}
+        <a class="btn btn-secondary" href="{% url 'patients:detail' patient.pk %}">Cancel</a>
+        <button type="submit" class="btn btn-outline-danger"><i class="bi bi-trash"></i> Delete patient</button>
+      </form>
+    {% else %}
+      <div class="cmq-auth-icon"><i class="bi bi-lock"></i></div>
+      <h1 class="cmq-auth-title mb-2">Can't delete this patient</h1>
+      <p class="cmq-muted mb-4">This patient has visits and cannot be deleted.</p>
+      <a class="btn btn-primary" href="{% url 'patients:detail' patient.pk %}">Back to patient</a>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

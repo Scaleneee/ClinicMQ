@@ -6,7 +6,7 @@
 {% block content %}
   <div class="cmq-page-header">
     <div>
-      <p class="cmq-eyebrow"><a href="{% url 'queueing:board' %}"><i class="bi bi-arrow-left"></i> Queue board</a></p>
+      <p class="cmq-eyebrow"><a href="{% url 'queueing:board' %}"><i class="bi bi-arrow-left"></i> Back</a></p>
       <h1 class="cmq-title">Walk-in</h1>
       <p class="cmq-subtitle">
         {{ o.session_label }} session · {% if o.doctor %}Dr. {{ o.doctor.full_name }}{% else %}No doctor on duty{% endif %}

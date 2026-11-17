@@ -10,9 +10,9 @@
         {% if patient %}
           <a href="{% url 'patients:detail' patient.pk %}"><i class="bi bi-arrow-left"></i> Back</a>
         {% elif back_to_walk_in %}
-          <a href="{% url 'queueing:walk_in' %}"><i class="bi bi-arrow-left"></i> Walk-in</a>
+          <a href="{% url 'queueing:walk_in' %}"><i class="bi bi-arrow-left"></i> Back</a>
         {% else %}
-          <a href="{% url 'patients:list' %}"><i class="bi bi-arrow-left"></i> Patients</a>
+          <a href="{% url 'patients:list' %}"><i class="bi bi-arrow-left"></i> Back</a>
         {% endif %}
       </p>
       <h1 class="cmq-title">{% if patient %}Edit patient{% else %}Add patient{% endif %}</h1>

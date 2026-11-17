@@ -1,0 +1,15 @@
+{% comment %}
+  Search box with a clear (×) button inside. The × shows only when there is text;
+  it empties the box and keeps the cursor there (results stay until the next search).
+  Usage: {% include "_search_input.html" with id="patient-q" value=query placeholder="IC number, name or phone" %}
+{% endcomment %}
+<div class="cmq-field cmq-search flex-fill mb-0">
+  <label for="{{ id }}" class="visually-hidden">{{ placeholder }}</label>
+  <i class="bi bi-search cmq-search-icon" aria-hidden="true"></i>
+  <input type="text" id="{{ id }}" name="{{ name|default:'q' }}" value="{{ value }}" placeholder="{{ placeholder }}"
+         autocomplete="off" {% if autofocus %}autofocus{% endif %}>
+  <button type="button" class="cmq-search-clear" aria-label="Clear search"
+          onclick="var box = document.getElementById('{{ id }}'); box.value = ''; box.focus();">
+    <i class="bi bi-x-lg" aria-hidden="true"></i>
+  </button>
+</div>

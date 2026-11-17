@@ -19,10 +19,7 @@
   </div>
 
   <form method="get" class="d-flex gap-2 mb-4" role="search">
-    <div class="cmq-field flex-fill mb-0">
-      <label for="patient-q" class="visually-hidden">IC number, name or phone</label>
-      <input type="text" id="patient-q" name="q" value="{{ query }}" placeholder="IC number, name or phone">
-    </div>
+    {% include "_search_input.html" with id="patient-q" value=query placeholder="IC number, name or phone" %}
     <button type="submit" class="btn btn-secondary"><i class="bi bi-search"></i> Search</button>
     {% if query %}<a class="btn btn-secondary" href="{% url 'patients:list' %}">Clear</a>{% endif %}
   </form>

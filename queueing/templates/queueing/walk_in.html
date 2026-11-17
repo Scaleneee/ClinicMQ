@@ -31,10 +31,7 @@
       <p class="cmq-eyebrow mb-2">Step 1</p>
       <h2 class="cmq-section-title">Find the patient</h2>
       <form method="get" class="d-flex gap-2 mb-3" role="search">
-        <div class="cmq-field flex-fill mb-0">
-          <label for="walkin-q" class="visually-hidden">IC number, name or phone</label>
-          <input type="text" id="walkin-q" name="q" value="{{ query }}" placeholder="IC number, name or phone" autofocus>
-        </div>
+        {% include "_search_input.html" with id="walkin-q" value=query placeholder="IC number, name or phone" autofocus=True %}
         <button type="submit" class="btn btn-secondary"><i class="bi bi-search"></i> Search</button>
       </form>
 

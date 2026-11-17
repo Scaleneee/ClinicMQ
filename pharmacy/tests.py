@@ -204,3 +204,23 @@ class DispenseTests(PharmacyTestCase):
             ps.dispense_items(dispensed_by=self.nurse.user, consultation_id=c.pk, medicine_ids=[])
         with self.assertRaises(ValidationError):  # not in this prescription
             ps.dispense_items(dispensed_by=self.nurse.user, consultation_id=c.pk, medicine_ids=[self.syrup.pk])
+
+
+class MedicineListPageTests(PharmacyTestCase):
+    def test_list_with_filter_and_badges(self):
+        self.client.force_login(self.nurse.user)
+        page = self.client.get("/pharmacy/?filter=low")
+        self.assertContains(page, "Cough syrup 100ml")
+        self.assertNotContains(page, "Paracetamol 500mg")
+        for text in ("Low stock", "Expiring soon", "5 bottles"):
+            self.assertContains(page, text)
+
+    def test_doctor_views_without_actions_and_patient_is_refused(self):
+        self.client.force_login(self.doc.user)
+        page = self.client.get("/pharmacy/")
+        self.assertContains(page, "Paracetamol 500mg")
+        self.assertNotContains(page, "Add medicine")
+        self.assertNotContains(page, "Restock")
+        patient = User.objects.create_user(username="p@x.my", email="p@x.my", password="x", role="PATIENT")
+        self.client.force_login(patient)
+        self.assertEqual(self.client.get("/pharmacy/").status_code, 403)

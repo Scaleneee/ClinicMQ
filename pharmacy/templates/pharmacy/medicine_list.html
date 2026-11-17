@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}Medicine · ClinicMQ{% endblock %}
+
+{% block content %}
+  <div class="cmq-page-header">
+    <div>
+      <p class="cmq-eyebrow">{% now "l, j F Y" %}</p>
+      <h1 class="cmq-title">Medicine</h1>
+      <p class="cmq-subtitle">Stock, prices and expiry dates.</p>
+    </div>
+    <div class="cmq-page-actions">
+      {% if is_nurse %}
+        {% url "pharmacy:dispense_list" as dispense_url %}
+        {% if dispense_url %}<a class="btn btn-secondary" href="{{ dispense_url }}"><i class="bi bi-bag-check"></i> Dispense</a>{% endif %}
+        {% url "pharmacy:medicine_create" as create_url %}
+        {% if create_url %}<a class="btn btn-primary" href="{{ create_url }}"><i class="bi bi-plus-lg"></i> Add medicine</a>{% endif %}
+      {% endif %}
+    </div>
+  </div>
+
+  <form method="get" class="d-flex flex-wrap gap-2 mb-3" role="search">
+    {% if status != "all" %}<input type="hidden" name="filter" value="{{ status }}">{% endif %}
+    {% include "_search_input.html" with id="medicine-q" value=query placeholder="Medicine name or category" %}
+    <div class="cmq-field mb-0" style="min-width:190px">
+      <label for="medicine-category" class="visually-hidden">Category</label>
+      <select id="medicine-category" name="category" onchange="this.form.submit()">
+        <option value="">All categories</option>
+        {% for c in categories %}<option value="{{ c }}" {% if c|lower == category|lower %}selected{% endif %}>{{ c }}</option>{% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="btn btn-secondary"><i class="bi bi-search"></i> Search</button>
+  </form>
+
+  <nav class="cmq-pills" aria-label="Filter by stock">
+    {% for p in pills %}
+      <a class="cmq-pill {% if p.active %}active{% endif %}"
+         href="?{% if p.key != 'all' %}filter={{ p.key }}&{% endif %}{% if query %}q={{ query|urlencode }}&{% endif %}{% if category %}category={{ category|urlencode }}{% endif %}"
+         {% if p.active %}aria-current="page"{% endif %}>
+        {{ p.label }} <span class="cmq-pill-count">{{ p.count }}</span>
+      </a>
+    {% endfor %}
+  </nav>
+
+  <div class="cmq-table-wrap">
+    <table class="cmq-table">
+      <thead>
+        <tr>
+          <th>Name</th><th>Category</th><th class="text-end">Price</th><th class="text-end">Stock</th>
+          <th>Expiry</th><th></th>
+          {% if is_nurse or is_admin %}<th class="text-end">Actions</th>{% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in medicines %}
+          <tr>
+            <td>{{ m.name }}</td>
+            <td>{{ m.category }}</td>
+            <td class="text-end text-nowrap">RM {{ m.unit_price|floatformat:2 }}<div class="cmq-muted" style="font-size:14px">per {{ m.unit }}</div></td>
+            <td class="text-end text-nowrap">{{ m.quantity }} {{ m.unit }}<div class="cmq-muted" style="font-size:14px">reorder at {{ m.reorder_level }}</div></td>
+            <td class="text-nowrap">{{ m.expiry_date|date:"j M Y" }}</td>
+            <td>
+              <div class="d-flex flex-wrap gap-1">
+                {% for label, style in m.badges %}
+                  {% include "_status_badge.html" with label=label style=style %}
+                {% endfor %}
+              </div>
+            </td>
+            {% if is_nurse or is_admin %}
+              <td>
+                <div class="cmq-row-actions">
+                  {% if is_nurse %}
+                    {% url "pharmacy:medicine_restock" m.pk as restock_url %}
+                    {% if restock_url %}<a class="btn btn-success btn-sm" href="{{ restock_url }}"><i class="bi bi-box-seam"></i> Restock</a>{% endif %}
+                    {% url "pharmacy:medicine_edit" m.pk as edit_url %}
+                    {% if edit_url %}<a class="btn btn-secondary btn-sm" href="{{ edit_url }}"><i class="bi bi-pencil"></i> Edit</a>{% endif %}
+                  {% endif %}
+                  {% if is_admin %}
+                    {% url "pharmacy:medicine_delete" m.pk as delete_url %}
+                    {% if delete_url %}<a class="btn btn-sm btn-quiet-danger" href="{{ delete_url }}">Delete</a>{% endif %}
+                  {% endif %}
+                </div>
+              </td>
+            {% endif %}
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="7" class="cmq-empty-row">
+              <i class="bi bi-capsule"></i>
+              {% if query or category or status != "all" %}No medicines match these filters.{% else %}No medicines yet.{% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}

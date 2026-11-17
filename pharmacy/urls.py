@@ -1,7 +1,9 @@
-from django.urls import path  # noqa: F401
+from django.urls import path
 
-from . import views  # noqa: F401
+from . import views
 
 app_name = "pharmacy"
 
-urlpatterns = []
+urlpatterns = [
+    path("", views.medicine_list, name="medicine_list"),
+]

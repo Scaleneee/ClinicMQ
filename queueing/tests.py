@@ -273,3 +273,99 @@ class LiveStatusTests(QueueTestCase):
         found = q.get_todays_ticket(self.patients[1], now=at(9, 22))
         self.assertEqual((found.pk, found.status), (t.pk, "MISSED"))
         self.assertIsNone(q.people_ahead(found))
+
+
+# ---------------------------------------------------------------------------
+# Screens (views). The clock is fixed with mock.patch so session rules apply.
+# ---------------------------------------------------------------------------
+from unittest import mock  # noqa: E402
+
+from django.urls import reverse  # noqa: E402
+
+
+class ScreenTestCase(QueueTestCase):
+    def setUp(self):
+        super().setUp()
+        self.clock = mock.patch("django.utils.timezone.now", return_value=at(10))
+        self.clock.start()
+        self.addCleanup(self.clock.stop)
+
+    def set_time(self, h, m=0):
+        self.clock.stop()
+        self.clock = mock.patch("django.utils.timezone.now", return_value=at(h, m))
+        self.clock.start()
+
+    def login(self, user):
+        self.client.force_login(user)
+
+
+class PatientScreenTests(ScreenTestCase):
+    def test_get_number_then_my_queue(self):
+        self.patient(1)
+        self.login(self.users[1])
+        page = self.client.get(reverse("queueing:get_number"))
+        self.assertContains(page, "Get queue number")
+        self.assertContains(page, "Online numbers close at 12:30 PM")
+
+        page = self.client.post(reverse("queueing:get_number"), follow=True)
+        self.assertRedirects(page, reverse("queueing:my_queue"))
+        self.assertContains(page, "Your number is 001")
+        self.assertContains(page, "Check in when you arrive")
+        self.assertContains(page, 'hx-trigger="every 5s"')
+
+        # Get number now shows the existing ticket (R3)
+        self.assertContains(self.client.get(reverse("queueing:get_number")), "You already have a number today")
+
+    def test_get_number_closed_after_cutoff(self):
+        self.set_time(12, 45)
+        self.patient(1)
+        self.login(self.users[1])
+        page = self.client.get(reverse("queueing:get_number"))
+        self.assertContains(page, "closed at 12:30 PM")
+        self.assertNotContains(page, "Get queue number</button>")
+
+    def test_staff_cannot_open_patient_pages(self):
+        self.login(self.nurse)
+        self.assertEqual(self.client.get(reverse("queueing:my_queue")).status_code, 403)
+
+    def test_cancel_my_number(self):
+        self.take(1, now=at(9, 30))
+        self.login(self.users[1])
+        page = self.client.post(reverse("queueing:cancel_my_ticket"), follow=True)
+        self.assertContains(page, "Number 001 was cancelled")
+        self.assertContains(page, "Get a new number")
+        self.assertNotContains(page, 'hx-trigger="every 5s"')  # stops refreshing
+
+    def test_called_shows_red_banner_and_come_now(self):
+        tickets = {n: self.take(n, now=at(9, 0, n)) for n in range(1, 4)}
+        self.check_in(tickets[1], at(9, 30))
+        self.login(self.users[3])
+        self.assertContains(self.client.get(reverse("queueing:my_queue_live")), "Please come to the clinic now")
+        q.call_next(called_by=self.nurse, now=at(9, 59))  # 1 minute ago: not a no-show yet
+        self.login(self.users[1])
+        self.assertContains(self.client.get(reverse("queueing:my_queue_live")), "It's your turn")
+
+    def test_qr_check_in(self):
+        t = self.take(1, now=at(9, 30))
+        self.login(self.users[1])
+        url = reverse("queueing:qr_check_in", args=[q.checkin_code(DAY)])
+        self.assertContains(self.client.get(url), "check me in")
+        page = self.client.post(url, follow=True)
+        self.assertContains(page, "You're checked in")
+        t.refresh_from_db()
+        self.assertEqual(t.status, "CHECKED_IN")
+
+    def test_qr_check_in_rejects_old_code(self):
+        self.take(1, now=at(9, 30))
+        self.login(self.users[1])
+        old = q.checkin_code(DAY - dt.timedelta(days=1))
+        page = self.client.post(reverse("queueing:qr_check_in", args=[old]), follow=True)
+        self.assertContains(page, "QR code out of date")
+        self.assertEqual(QueueTicket.objects.get().status, "WAITING")
+
+    def test_public_status_page_needs_no_login_and_hides_name(self):
+        t = q.issue_ticket(issued_by=self.nurse, patient=self.patient(1), source="WALKIN", now=at(9, 30))
+        page = self.client.get(reverse("queueing:ticket_status", args=[t.public_token]))
+        self.assertContains(page, "001")
+        self.assertNotContains(page, self.patients[1].full_name)
+        self.assertNotContains(page, "Cancel my number")

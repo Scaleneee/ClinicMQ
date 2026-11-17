@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% load queue_tags %}
+
+{% block title %}My queue · ClinicMQ{% endblock %}
+
+{% block content %}
+<div class="cmq-narrow">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <p class="cmq-eyebrow mb-0">{% now "l, j F Y" %}</p>
+    <button type="button" class="btn btn-link p-0 cmq-muted" data-bs-toggle="modal" data-bs-target="#howQueueWorks">
+      <i class="bi bi-question-circle"></i> How the queue works
+    </button>
+  </div>
+
+  {% include "queueing/_ticket_live.html" with mode="patient" %}
+
+  {% if can_cancel %}
+    <form method="post" action="{% url 'queueing:cancel_my_ticket' %}" class="text-center mt-4"
+          data-confirm-title="Cancel number {{ ticket.queue_no|queue_no }}?"
+          data-confirm-text="You will lose your place in the queue. You can take a new number afterwards if online numbers are still open."
+          data-confirm-button="Cancel my number">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-quiet-danger">Cancel my number</button>
+    </form>
+  {% endif %}
+</div>
+
+{% include "queueing/_how_it_works.html" %}
+{% endblock %}

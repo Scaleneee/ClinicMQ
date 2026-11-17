@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}Queue status · ClinicMQ{% endblock %}
+
+{% block content %}
+<div class="cmq-narrow">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <p class="cmq-eyebrow mb-0">{{ ticket.queue_date|date:"l, j F Y" }}</p>
+    <button type="button" class="btn btn-link p-0 cmq-muted" data-bs-toggle="modal" data-bs-target="#howQueueWorks">
+      <i class="bi bi-question-circle"></i> How the queue works
+    </button>
+  </div>
+
+  {% include "queueing/_ticket_live.html" with mode="public" %}
+
+  <p class="cmq-hint text-center mt-4">Keep this page open to follow your turn. Your name isn't shown here.</p>
+</div>
+
+{% include "queueing/_how_it_works.html" %}
+{% endblock %}

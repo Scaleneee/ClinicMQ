@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% load queue_tags humanize %}
+
+{% block title %}Check in · ClinicMQ{% endblock %}
+
+{% block content %}
+<div class="cmq-narrow text-center">
+
+  {% if not valid %}
+    <div class="cmq-auth-icon is-danger"><i class="bi bi-qr-code"></i></div>
+    <h1 class="cmq-title">QR code out of date</h1>
+    <p class="cmq-subtitle mb-4">This check-in code isn't valid today. Please scan the QR code on the waiting-room screen, or ask at the counter.</p>
+
+  {% elif not is_patient %}
+    <div class="cmq-auth-icon"><i class="bi bi-person-badge"></i></div>
+    <h1 class="cmq-title">Patients only</h1>
+    <p class="cmq-subtitle mb-4">This page checks in a patient's own number. Staff can check patients in from the queue board.</p>
+    {% include "_action_link.html" with name="queueing:board" label="Open queue board" css="btn btn-primary btn-lg" %}
+
+  {% elif not ticket %}
+    <div class="cmq-auth-icon"><i class="bi bi-ticket-perforated"></i></div>
+    <h1 class="cmq-title">No number today</h1>
+    <p class="cmq-subtitle mb-4">You don't have a queue number today. Take one first, or ask at the counter.</p>
+    <a class="btn btn-primary btn-lg w-100" href="{% url 'queueing:get_number' %}">Get queue number</a>
+
+  {% elif can_check_in %}
+    <p class="cmq-eyebrow mb-1">Your number</p>
+    <div class="cmq-ticket-no cmq-ticket-no-xl">{{ ticket.queue_no|queue_no }}</div>
+    <div class="mb-4">{% status_badge ticket.status %}</div>
+    {% if ticket.status != "WAITING" %}
+      <p class="cmq-subtitle mb-4">You arrived late, so you'll go after the next {{ cs.grace_count }} checked-in patients.</p>
+    {% endif %}
+    <form method="post">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-success btn-lg w-100"><i class="bi bi-check2-circle"></i> I'm here, check me in</button>
+    </form>
+
+  {% else %}
+    {# Checked in (or further along) #}
+    <div class="cmq-auth-icon is-success"><i class="bi bi-check-lg"></i></div>
+    <h1 class="cmq-title">You're checked in</h1>
+    <p class="cmq-eyebrow mb-1 mt-3">Your number</p>
+    <div class="cmq-ticket-no cmq-ticket-no-xl">{{ ticket.queue_no|queue_no }}</div>
+    <div class="mb-3">{% status_badge ticket.status %}</div>
+    {% if s.place %}<p class="cmq-subtitle mb-4">You are {{ s.place|ordinal }} in line.</p>{% endif %}
+    <a class="btn btn-primary btn-lg w-100" href="{% url 'queueing:my_queue' %}">View my queue <i class="bi bi-arrow-right"></i></a>
+  {% endif %}
+
+</div>
+{% endblock %}

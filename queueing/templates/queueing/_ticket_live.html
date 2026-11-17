@@ -1,0 +1,118 @@
+{% load queue_tags humanize %}
+{% comment %}
+  The live ticket block, shared by My queue (mode="patient") and the public
+  status page (mode="public"). While the ticket is open it reloads itself
+  every 5 seconds; it never shows the patient's name.
+{% endcomment %}
+<div id="ticket-live"
+     {% if is_live %}
+       hx-get="{% if mode == 'public' %}{% url 'queueing:ticket_status_live' ticket.public_token %}{% else %}{% url 'queueing:my_queue_live' %}{% endif %}"
+       hx-trigger="every 5s" hx-swap="outerHTML"
+     {% endif %}>
+
+{% if not ticket %}
+  <section class="cmq-card cmq-empty">
+    <i class="bi bi-ticket-perforated cmq-empty-icon" aria-hidden="true"></i>
+    <p class="mb-3">You don't have a queue number today.</p>
+    <a class="btn btn-primary btn-lg w-100" href="{% url 'queueing:get_number' %}"><i class="bi bi-plus-lg"></i> Get queue number</a>
+  </section>
+{% else %}
+
+  {# Banners first, so they're seen at a glance #}
+  {% if ticket.status == "CALLED" %}
+    <div class="cmq-banner cmq-banner-red" role="alert">
+      <strong>It's your turn.</strong>Please go to the consultation room.
+    </div>
+  {% elif s.come_now %}
+    <div class="cmq-banner cmq-banner-yellow" role="status">
+      {% if ticket.status == "WAITING" %}
+        <strong>Please come to the clinic now.</strong>{{ s.ahead }} {{ s.ahead|pluralize:"person,people" }} ahead of you.
+      {% else %}
+        <strong>Almost your turn.</strong>Please stay near the consultation room.
+      {% endif %}
+    </div>
+  {% endif %}
+
+  <section class="cmq-card cmq-ticket">
+    <p class="cmq-eyebrow mb-1">Your number</p>
+    <div class="cmq-ticket-no cmq-ticket-no-xl {% if ticket.status == 'CANCELLED' or ticket.status == 'EXPIRED' %}is-void{% endif %}">
+      {{ ticket.queue_no|queue_no }}
+    </div>
+    <div class="mb-2">{% status_badge ticket.status %}</div>
+    <p class="cmq-muted mb-4">
+      {{ ticket.get_session_display }} session{% if ticket.doctor %} · Dr. {{ ticket.doctor.full_name }}{% endif %}
+    </p>
+
+    {% if is_live %}
+      <div class="cmq-stats mb-2">
+        <div class="cmq-stat">
+          <div class="cmq-stat-label">Now serving</div>
+          <div class="cmq-stat-value">{% if s.now_serving %}{{ s.now_serving.queue_no|queue_no }}{% else %}–{% endif %}</div>
+        </div>
+        <div class="cmq-stat">
+          <div class="cmq-stat-label">Ahead</div>
+          <div class="cmq-stat-value">{% if s.ahead is None %}–{% else %}{{ s.ahead }}{% endif %}</div>
+          {% if s.pushed_back %}<div class="cmq-stat-note" title="Late patients rejoined ahead of you">▲ late rejoin</div>{% endif %}
+        </div>
+        <div class="cmq-stat">
+          <div class="cmq-stat-label">Est. wait</div>
+          <div class="cmq-stat-value" style="font-size:20px">{% wait_range s.wait_min s.wait_max %}</div>
+        </div>
+      </div>
+      {% if s.pushed_back %}
+        <p class="cmq-hint mb-3">▲ Patients who arrived late have rejoined ahead of you (grace rule).</p>
+      {% endif %}
+    {% endif %}
+
+    {# What to do now, by status #}
+    <div class="cmq-ticket-action">
+      {% if ticket.status == "WAITING" %}
+        <i class="bi bi-qr-code-scan"></i>
+        <div><strong>Check in when you arrive</strong>
+          <span>Scan the QR code on the waiting-room screen, or ask at the counter.</span></div>
+      {% elif ticket.status == "CHECKED_IN" %}
+        <i class="bi bi-check2-circle"></i>
+        <div><strong>You're in line</strong>
+          <span>You are {{ s.place|ordinal }} in line.</span></div>
+      {% elif ticket.status == "IN_CONSULTATION" %}
+        <i class="bi bi-heart-pulse"></i>
+        <div><strong>You're with the doctor</strong><span>Take your time.</span></div>
+      {% elif ticket.status == "SKIPPED" %}
+        <div class="cmq-banner cmq-banner-outline-red mb-0 w-100 text-start">
+          <strong>You were skipped</strong>
+          A later number was called before you arrived. Check in now and you'll go after the next {{ cs.grace_count }} patients.
+          <div class="mt-2" style="font-size:16px"><i class="bi bi-qr-code-scan"></i> Scan the QR code on the waiting-room screen, or ask at the counter.</div>
+        </div>
+      {% elif ticket.status == "MISSED" %}
+        <div class="cmq-banner cmq-banner-outline-red mb-0 w-100 text-start">
+          <strong>You missed your call</strong>
+          You can check in again once and go after the next {{ cs.grace_count }} patients. Missing it again cancels your number.
+          <div class="mt-2" style="font-size:16px"><i class="bi bi-qr-code-scan"></i> Scan the QR code on the waiting-room screen, or ask at the counter.</div>
+        </div>
+      {% elif ticket.status == "COMPLETED" %}
+        <div class="cmq-banner cmq-banner-green mb-0 w-100">
+          <strong><i class="bi bi-check-circle"></i> Visit completed</strong>See you again.
+        </div>
+      {% elif ticket.status == "CANCELLED" or ticket.status == "EXPIRED" %}
+        <p class="cmq-muted mb-3 w-100">
+          This number was {{ ticket.get_status_display|lower }}{% if ticket.status == "EXPIRED" %} at the end of the session{% endif %}.
+        </p>
+        {% if mode == "patient" %}
+          <a class="btn btn-primary btn-lg w-100" href="{% url 'queueing:get_number' %}"><i class="bi bi-plus-lg"></i> Get a new number</a>
+        {% endif %}
+      {% endif %}
+    </div>
+
+    {% if ticket.status == "COMPLETED" and mode == "patient" %}
+      <div class="d-flex gap-2 mt-3">
+        {% include "_action_link.html" with name="consultation:my_visits" label="My visits" css="btn btn-secondary flex-fill" %}
+        {% include "_action_link.html" with name="billing:my_bills" label="My bills" css="btn btn-secondary flex-fill" %}
+      </div>
+    {% endif %}
+  </section>
+
+  {% if is_live %}
+    <p class="text-center mt-2 mb-0"><span class="cmq-live">Live · updates every 5 seconds</span></p>
+  {% endif %}
+{% endif %}
+</div>

@@ -516,3 +516,17 @@ a.cmq-link-row:hover { background: var(--cmq-wash); color: var(--cmq-ink); }
 /* ---------- Empty state ---------- */
 .cmq-empty-row { text-align: center; padding: 40px 16px !important; color: var(--cmq-muted); }
 .cmq-empty-row .bi { display: block; font-size: 28px; margin-bottom: 6px; }
+
+/* ---------- My queue / status page ---------- */
+.cmq-ticket-no-xl { font-size: 120px; letter-spacing: 4px; }
+@media (max-width: 400px) { .cmq-ticket-no-xl { font-size: 104px; } }
+.cmq-ticket-no.is-void { text-decoration: line-through; text-decoration-thickness: 4px; color: var(--cmq-muted); }
+.cmq-ticket-action {
+  display: flex; align-items: flex-start; gap: 12px; text-align: left;
+  padding-top: 16px; border-top: 1px solid var(--cmq-line); flex-wrap: wrap;
+}
+.cmq-ticket-action > .bi { font-size: 26px; line-height: 1; }
+.cmq-ticket-action strong { display: block; }
+.cmq-ticket-action span { color: var(--cmq-muted); }
+.cmq-how { padding-left: 20px; margin: 0; }
+.cmq-how li { margin-bottom: 10px; }

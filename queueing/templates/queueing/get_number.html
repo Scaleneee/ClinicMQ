@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% load queue_tags %}
+
+{% block title %}Get queue number · ClinicMQ{% endblock %}
+
+{% block content %}
+<div class="cmq-narrow">
+  <p class="cmq-eyebrow">{% now "l, j F Y" %}</p>
+  <h1 class="cmq-title">Get queue number</h1>
+  <p class="cmq-subtitle mb-4">Take a number now and come to the clinic when your turn is near.</p>
+
+  {% if not patient %}
+    <div class="cmq-alert cmq-alert-warning" role="alert">
+      <i class="bi bi-exclamation-triangle"></i>
+      <div class="cmq-alert-body">Your account isn't linked to a patient record yet. Please ask at the clinic counter.</div>
+    </div>
+
+  {% elif ticket %}
+    {# Already has a number today (R3) #}
+    <section class="cmq-card text-center">
+      <p class="cmq-eyebrow mb-1">You already have a number today</p>
+      <div class="cmq-ticket-no">{{ ticket.queue_no|queue_no }}</div>
+      <div class="mb-4">{% status_badge ticket.status %}</div>
+      <a class="btn btn-primary btn-lg w-100" href="{% url 'queueing:my_queue' %}">View my queue <i class="bi bi-arrow-right"></i></a>
+    </section>
+
+  {% elif o.online_open %}
+    {# Open: session card + big button #}
+    <section class="cmq-card mb-3">
+      <p class="cmq-eyebrow mb-1">{{ o.session_label }} session</p>
+      <h2 class="cmq-section-title mb-3">{% if o.doctor %}Dr. {{ o.doctor.full_name }}{% endif %}</h2>
+      <div class="cmq-stats mb-3">
+        <div class="cmq-stat">
+          <div class="cmq-stat-label">Now serving</div>
+          <div class="cmq-stat-value">{% if o.now_serving %}{{ o.now_serving.queue_no|queue_no }}{% else %}–{% endif %}</div>
+        </div>
+        <div class="cmq-stat">
+          <div class="cmq-stat-label">Waiting</div>
+          <div class="cmq-stat-value">{{ o.waiting }}</div>
+        </div>
+        <div class="cmq-stat">
+          <div class="cmq-stat-label">Est. wait</div>
+          <div class="cmq-stat-value" style="font-size:20px">{% wait_range o.wait_min o.wait_max %}</div>
+        </div>
+      </div>
+      <p class="cmq-hint mb-0"><i class="bi bi-clock"></i> Online numbers close at {{ o.online_until|time:"g:i A" }}.</p>
+    </section>
+
+    <form method="post">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-primary btn-lg w-100"><i class="bi bi-plus-lg"></i> Get queue number</button>
+    </form>
+
+  {% else %}
+    {# Closed: grey card with the reason #}
+    <section class="cmq-card cmq-empty">
+      <i class="bi bi-door-closed cmq-empty-icon" aria-hidden="true"></i>
+      <p class="mb-0">{{ o.closed_reason }}</p>
+    </section>
+  {% endif %}
+</div>
+{% endblock %}

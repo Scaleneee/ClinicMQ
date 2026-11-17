@@ -1,0 +1,21 @@
+{# "How the queue works" modal, opened from My queue and the public status page. #}
+<div class="modal fade" id="howQueueWorks" tabindex="-1" aria-labelledby="howQueueWorksTitle" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content cmq-modal">
+      <div class="modal-body">
+        <h2 class="cmq-section-title mb-3" id="howQueueWorksTitle">How the queue works</h2>
+        <ol class="cmq-how">
+          <li><strong>One line for everyone.</strong> Online and walk-in numbers share the same queue.</li>
+          <li><strong>Check in when you arrive.</strong> Only checked-in patients are called, smallest number first.</li>
+          <li><strong>Come when it's near.</strong> We'll tell you to come when {{ cs.near_alert_threshold }} or fewer people are ahead of you.</li>
+          <li><strong>Late?</strong> If a later number is called before you arrive, you're skipped. When you check in, you go after the next {{ cs.grace_count }} patients.</li>
+          <li><strong>Called but not there?</strong> After {{ cs.miss_timeout_min }} minutes you're marked as missed. You can check in again once; missing it a second time cancels your number.</li>
+          <li><strong>Numbers end with the session.</strong> Unused numbers expire when the session closes.</li>
+        </ol>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Got it</button>
+      </div>
+    </div>
+  </div>
+</div>

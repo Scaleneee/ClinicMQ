@@ -8,7 +8,9 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Values come from .env (not in Git). See .env.example for the names.
-load_dotenv(BASE_DIR / ".env")
+# override=True: .env wins over variables already in the shell (e.g. a stale copy
+# that VS Code put into the terminal before .env was edited).
+load_dotenv(BASE_DIR / ".env", override=True)
 
 SECRET_KEY = os.environ.get("SECRET_KEY", "django-insecure-dev-only-change-me")
 DEBUG = os.environ.get("DEBUG", "True") == "True"

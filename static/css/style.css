@@ -725,3 +725,8 @@ a.cmq-stat-card:hover { background: var(--cmq-wash); color: var(--cmq-ink); bord
 .cmq-week-name.is-doctor { font-weight: 700; }
 .cmq-week-name.is-inactive { color: var(--cmq-muted); text-decoration: line-through; }
 .cmq-week-name.is-warning { color: #7a5c00; }
+
+/* ---------- Consultations ---------- */
+.cmq-prewrap { white-space: pre-line; }
+.cmq-money-row { display: flex; justify-content: space-between; padding: 6px 0; }
+.cmq-money-row.is-total { border-top: 1px solid var(--cmq-line); margin-top: 4px; padding-top: 10px; font-weight: 700; font-size: 19px; }

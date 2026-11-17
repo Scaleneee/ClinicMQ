@@ -177,3 +177,37 @@ class UpdateDeleteTests(ConsultationTestCase):
         self.assertEqual(list(cs.visits_without_notes(doctor_user=self.doc.user)), [self.ticket])
         self.create()
         self.assertEqual(list(cs.visits_without_notes(doctor_user=self.doc.user)), [])
+
+
+# ---------------------------------------------------------------------------
+# Screens
+# ---------------------------------------------------------------------------
+from django.urls import reverse  # noqa: E402
+
+
+class ListDetailScreenTests(ConsultationTestCase):
+    def test_list_and_detail(self):
+        c, _ = self.create(mc={"start_date": TODAY, "days": 2, "reason": "Viral fever"})
+        self.client.force_login(self.nurse.user)
+        page = self.client.get(reverse("consultation:list"))
+        self.assertContains(page, "Viral fever")
+        self.assertContains(page, "Siti Nurhaliza")
+        self.assertContains(page, "2 days")
+        page = self.client.get(reverse("consultation:list") + "?q=nothing")
+        self.assertContains(page, "No consultation matches")
+
+        page = self.client.get(reverse("consultation:detail", args=[c.pk]))
+        for text in ("Fever and cough, 2 days", "Paracetamol 500mg", "RM 10.00", "Waiting",
+                     "MC-20261104-001", "4 Nov – 5 Nov 2026", "RM 40.00", "Not billed yet"):
+            self.assertContains(page, text)
+
+    def test_doctor_sees_visits_needing_notes(self):
+        self.client.force_login(self.doc.user)
+        page = self.client.get(reverse("consultation:list"))
+        self.assertContains(page, "Visits waiting for your notes today")
+        self.assertContains(page, "001 · Siti Nurhaliza")
+
+    def test_patients_cannot_view(self):
+        u = User.objects.create_user(username="p@x.my", email="p@x.my", password="x", role="PATIENT")
+        self.client.force_login(u)
+        self.assertEqual(self.client.get(reverse("consultation:list")).status_code, 403)

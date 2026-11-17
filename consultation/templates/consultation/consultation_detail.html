@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% load queue_tags %}
+
+{% block title %}{{ c.diagnosis }} · ClinicMQ{% endblock %}
+
+{% block content %}
+  <div class="cmq-page-header">
+    <div>
+      <p class="cmq-eyebrow"><a href="{% url 'consultation:list' %}"><i class="bi bi-arrow-left"></i> Back</a></p>
+      <h1 class="cmq-title">{{ c.diagnosis }}</h1>
+      <p class="cmq-subtitle">
+        {{ c.created_at|date:"j M Y, g:i A" }} ·
+        <a href="{% url 'patients:detail' c.ticket.patient.pk %}">{{ c.ticket.patient.full_name|title }}</a>
+        ({{ c.ticket.patient.date_of_birth|age }} yrs) · Dr. {{ c.doctor.full_name }}
+      </p>
+    </div>
+    <div class="cmq-page-actions">
+      {% if mc %}
+        {% url "consultation:mc_pdf" c.pk as mc_url %}
+        {% if mc_url %}<a class="btn btn-secondary" href="{{ mc_url }}" target="_blank" rel="noopener"><i class="bi bi-file-earmark-pdf"></i> Download MC</a>{% endif %}
+      {% endif %}
+      {% if can_delete %}
+        {% url "consultation:delete" c.pk as delete_url %}
+        {% if delete_url %}<a class="btn btn-outline-danger" href="{{ delete_url }}"><i class="bi bi-trash"></i> Delete</a>{% endif %}
+      {% endif %}
+      {% if can_edit %}
+        {% url "consultation:edit" c.pk as edit_url %}
+        {% if edit_url %}<a class="btn btn-primary" href="{{ edit_url }}"><i class="bi bi-pencil"></i> Edit</a>{% endif %}
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-8">
+      {# Notes #}
+      <section class="cmq-card mb-4">
+        <h2 class="cmq-section-title">Notes</h2>
+        <dl class="cmq-details">
+          <dt>Queue no.</dt><dd>{{ c.ticket.queue_no|queue_no }} · {{ c.ticket.get_session_display }} session</dd>
+          <dt>Symptoms</dt><dd class="cmq-prewrap">{{ c.symptoms }}</dd>
+          <dt>Diagnosis</dt><dd>{{ c.diagnosis }}</dd>
+          <dt>Notes</dt><dd class="cmq-prewrap">{{ c.notes|default:"–" }}</dd>
+        </dl>
+      </section>
+
+      {# Prescription #}
+      <section class="cmq-card cmq-card-flush">
+        <div class="cmq-card-head"><h2 class="cmq-section-title mb-0">Prescription</h2></div>
+        <div style="overflow-x:auto">
+          <table class="cmq-table">
+            <thead><tr><th>Medicine</th><th>Dosage</th><th class="text-end">Qty</th><th class="text-end">Amount</th><th>Status</th></tr></thead>
+            <tbody>
+              {% for i in items %}
+                <tr>
+                  <td>{{ i.medicine.name }}</td>
+                  <td>{{ i.dosage }}</td>
+                  <td class="text-end">{{ i.quantity }} {{ i.medicine.unit }}</td>
+                  <td class="text-end">RM {{ i.amount|floatformat:2 }}</td>
+                  <td>
+                    {% if i.dispensed %}
+                      <span class="cmq-badge cmq-badge-checked-in" title="{{ i.dispensed_at|date:'j M Y g:i A' }}"><span class="cmq-badge-dot"></span>Dispensed</span>
+                    {% else %}
+                      <span class="cmq-badge cmq-badge-waiting"><span class="cmq-badge-dot"></span>Waiting</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="5" class="cmq-empty-row"><i class="bi bi-capsule"></i>No medicines prescribed.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <div class="col-lg-4">
+      {# Medical certificate #}
+      <section class="cmq-card mb-4">
+        <h2 class="cmq-section-title">Medical certificate</h2>
+        {% if mc %}
+          <dl class="cmq-details">
+            <dt>MC no.</dt><dd>{{ mc.mc_no }}</dd>
+            <dt>Dates</dt><dd>{{ mc.start_date|date:"j M" }} – {{ mc_end|date:"j M Y" }}</dd>
+            <dt>Days</dt><dd>{{ mc.days }}</dd>
+            <dt>Reason</dt><dd>{{ mc.reason }}</dd>
+          </dl>
+        {% else %}
+          <p class="cmq-muted mb-0">No MC issued.</p>
+        {% endif %}
+      </section>
+
+      {# Billing #}
+      <section class="cmq-card">
+        <h2 class="cmq-section-title">Billing</h2>
+        <div class="cmq-money-row"><span>Consultation fee</span><span>RM {{ c.consult_fee|floatformat:2 }}</span></div>
+        <div class="cmq-money-row"><span>Medicines</span><span>RM {{ meds_total|floatformat:2 }}</span></div>
+        <div class="cmq-money-row is-total"><span>Total</span><span>RM {{ total|floatformat:2 }}</span></div>
+        {% if bill %}
+          <p class="mb-0 mt-3">
+            Bill {{ bill.bill_no }}
+            {% if bill.status == "PAID" %}<span class="cmq-badge cmq-badge-checked-in"><span class="cmq-badge-dot"></span>Paid</span>
+            {% elif bill.status == "UNPAID" %}<span class="cmq-badge cmq-badge-waiting"><span class="cmq-badge-dot"></span>Unpaid</span>
+            {% else %}<span class="cmq-badge cmq-badge-completed"><span class="cmq-badge-dot"></span>Void</span>{% endif %}
+          </p>
+        {% else %}
+          <p class="cmq-muted mb-0 mt-3">Not billed yet.</p>
+        {% endif %}
+      </section>
+    </div>
+  </div>
+{% endblock %}

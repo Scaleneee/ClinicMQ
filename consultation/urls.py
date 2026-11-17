@@ -1,7 +1,10 @@
-from django.urls import path  # noqa: F401
+from django.urls import path
 
-from . import views  # noqa: F401
+from . import views
 
 app_name = "consultation"
 
-urlpatterns = []
+urlpatterns = [
+    path("", views.consultation_list, name="list"),
+    path("<int:pk>/", views.consultation_detail, name="detail"),
+]

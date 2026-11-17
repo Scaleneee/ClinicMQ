@@ -92,7 +92,7 @@ def validate_patient_data(*, ic_no, full_name, gender, date_of_birth,
     # IC format + uniqueness
     if not IC_PATTERN.match(ic_no):
         # invalid format
-        errors["ic_no"] = "IC muse be in the format ######-##-####."
+        errors["ic_no"] = "IC must be in the format ######-##-####."
 
     else:
         dup = Patient.objects.filter(ic_no=ic_no)
@@ -129,7 +129,7 @@ def validate_patient_data(*, ic_no, full_name, gender, date_of_birth,
         else:
             if date_of_birth and "date_of_birth" not in errors and date_of_birth != ic_bday:
                 # different bday from input and ic
-                errors["date_of_birth"] = f"Date of birth does not match IC ({ic_bday: %d/%m/%Y})."
+                errors["date_of_birth"] = f"Date of birth does not match IC ({ic_bday:%d/%m/%Y})."
 
             # cross check gender
             if gender in VALID_GENDERS and gender and gender != gender_from_ic(ic_no):
@@ -240,7 +240,7 @@ def search_patients(*, searched_by, query: str, limit: int = 20):
         phone_match = Q(phone__icontains=digits[:3])
         if len(digits) > 3:
             phone_match &= Q(phone__icontains=digits[3:])
-        conditions != phone_match
+        conditions |= phone_match
     return Patient.objects.filter(conditions).order_by("full_name")[:limit]
 
 # ------------------------------------------------

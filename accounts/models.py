@@ -61,30 +61,25 @@ class User(AbstractUser):
 
 
 class Staff(models.Model):
-    class Role(models.TextChoices):
-        DOCTOR = "DOCTOR", "Doctor"
-        NURSE = "NURSE", "Nurse"
-        ADMIN = "ADMIN", "Admin"
+    """Profile of a doctor, nurse or admin.
+
+    The role and the active flag live on the linked User only (user.role, user.is_active),
+    so they can never disagree. A deactivated staff member's user can't log in.
+    """
+
+    ROLES = (User.Role.DOCTOR, User.Role.NURSE, User.Role.ADMIN)
 
     staff_id = models.BigAutoField(primary_key=True)
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="staff")
     full_name = models.CharField(max_length=100)
-    role = models.CharField(max_length=10, choices=Role.choices)
     phone = models.CharField(max_length=15)
     specialty = models.CharField(max_length=100, null=True, blank=True)
-    is_active = models.BooleanField(default=True)
 
     class Meta:
         verbose_name_plural = "staff"
-        constraints = [
-            models.CheckConstraint(
-                condition=models.Q(role__in=["DOCTOR", "NURSE", "ADMIN"]),
-                name="staff_role_valid",
-            ),
-        ]
 
     def __str__(self):
-        return f"{self.full_name} ({self.role})"
+        return f"{self.full_name} ({self.user.role})"
 
 
 class Shift(models.Model):

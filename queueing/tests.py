@@ -29,8 +29,7 @@ class QueueTestCase(TestCase):
     def setUp(self):
         self.nurse = User.objects.create_user(username="nurse", email="nurse@x.my", password="x", role="NURSE")
         self.doctor_user = User.objects.create_user(username="doc", email="doc@x.my", password="x", role="DOCTOR")
-        self.doctor = Staff.objects.create(user=self.doctor_user, full_name="Aisyah Rahman",
-                                           role="DOCTOR", phone="012-0000000")
+        self.doctor = Staff.objects.create(user=self.doctor_user, full_name="Aisyah Rahman", phone="012-0000000")
         Shift.objects.create(staff=self.doctor, shift_date=DAY, session="MORNING")
         self.users, self.patients = {}, {}
 

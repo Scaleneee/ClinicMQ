@@ -53,7 +53,7 @@ class ConsultationTestCase(TestCase):
     def staff(self, name, role):
         email = f"{name.split()[0].lower()}@clinic.my"
         user = User.objects.create_user(username=email, email=email, password="x", role=role)
-        return Staff.objects.create(user=user, full_name=name, role=role, phone="012-0000000")
+        return Staff.objects.create(user=user, full_name=name, phone="012-0000000")
 
     def with_doctor(self):
         t = q.issue_ticket(issued_by=self.nurse.user, patient=self.patient, source="WALKIN")

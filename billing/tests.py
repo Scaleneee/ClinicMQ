@@ -45,7 +45,7 @@ class BillingTestCase(TestCase):
     def staff(self, name, role):
         email = f"{name.split()[0].lower()}@clinic.my"
         user = User.objects.create_user(username=email, email=email, password="x", role=role)
-        return Staff.objects.create(user=user, full_name=name, role=role, phone="012-0000000")
+        return Staff.objects.create(user=user, full_name=name, phone="012-0000000")
 
     def visit(self, items=(), fee="30", complete=True, user=None):
         """A consultation with (medicine, quantity) items; the visit is completed by default."""

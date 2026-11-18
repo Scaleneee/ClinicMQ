@@ -51,7 +51,7 @@ def _clean_name(raw):
 
 def display_name(staff):
     """'Dr. Aisyah Rahman' for doctors, otherwise the full name."""
-    return f"Dr. {staff.full_name}" if staff.role == Staff.Role.DOCTOR else staff.full_name
+    return f"Dr. {staff.full_name}" if staff.user.role == User.Role.DOCTOR else staff.full_name
 
 
 # ---------------------------------------------------------------------------
@@ -60,17 +60,16 @@ def display_name(staff):
 def staff_on_duty(date, session, role=None):
     """Active staff with a shift on `date` for `session` ("MORNING" / "NIGHT").
 
-    Deactivated staff and staff whose login is disabled are left out.
+    Deactivated staff (their login is disabled) are left out.
     Optionally filter by role ("DOCTOR", "NURSE", "ADMIN").
     """
     staff = Staff.objects.filter(
-        is_active=True,
         user__is_active=True,
         shifts__shift_date=date,
         shifts__session=session,
     )
     if role:
-        staff = staff.filter(role=role)
+        staff = staff.filter(user__role=role)
     return staff.select_related("user").order_by("full_name").distinct()
 
 
@@ -80,7 +79,7 @@ def doctor_on_duty(date, session):
     The clinic has one doctor per session; if two were rostered by mistake,
     the first by name is returned.
     """
-    return staff_on_duty(date, session, role=Staff.Role.DOCTOR).first()
+    return staff_on_duty(date, session, role=User.Role.DOCTOR).first()
 
 
 # ---------------------------------------------------------------------------
@@ -91,13 +90,13 @@ def list_staff(*, viewed_by, role=None, query=""):
     _require_staff(viewed_by)
     staff = Staff.objects.select_related("user")
     if role in STAFF_ROLES:
-        staff = staff.filter(role=role)
+        staff = staff.filter(user__role=role)
     query = (query or "").strip()
     if query:
         staff = staff.filter(
-            Q(full_name__icontains=query) | Q(user__email__icontains=query) | Q(role__iexact=query)
+            Q(full_name__icontains=query) | Q(user__email__icontains=query) | Q(user__role__iexact=query)
         )
-    return staff.order_by("-is_active", "role", "full_name")
+    return staff.order_by("-user__is_active", "user__role", "full_name")
 
 
 # ---------------------------------------------------------------------------
@@ -157,9 +156,8 @@ def create_staff(*, created_by, full_name, email, role, phone, password, special
     return Staff.objects.create(
         user=user,
         full_name=data["full_name"],
-        role=data["role"],
         phone=data["phone"],
-        specialty=specialty if data["role"] == Staff.Role.DOCTOR else None,
+        specialty=specialty if data["role"] == User.Role.DOCTOR else None,
     )
 
 
@@ -171,12 +169,12 @@ def update_staff(*, updated_by, staff_id, full_name, email, role, phone, special
     errors, data = _validate_staff_fields(full_name=full_name, email=email, role=role, phone=phone,
                                           exclude_user_id=staff.user_id)
 
-    if not errors.get("role") and data["role"] != staff.role:
-        if staff.role == Staff.Role.ADMIN and staff.is_active and _active_admin_count() <= 1:
+    if not errors.get("role") and data["role"] != staff.user.role:
+        if staff.user.role == User.Role.ADMIN and staff.user.is_active and _active_admin_count() <= 1:
             errors["role"] = "This is the only active admin, so the role can't be changed."
         elif staff.user_id == updated_by.id:
             errors["role"] = "You can't change your own role."
-        elif data["role"] == Staff.Role.DOCTOR:
+        elif data["role"] == User.Role.DOCTOR:
             clash = _doctor_clashes(staff)
             if clash:
                 errors["role"] = clash
@@ -184,12 +182,11 @@ def update_staff(*, updated_by, staff_id, full_name, email, role, phone, special
         raise ValidationError(errors)
 
     staff.full_name = data["full_name"]
-    staff.role = data["role"]
     staff.phone = data["phone"]
-    staff.specialty = ((specialty or "").strip() or None) if data["role"] == Staff.Role.DOCTOR else None
+    staff.specialty = ((specialty or "").strip() or None) if data["role"] == User.Role.DOCTOR else None
     staff.save()
 
-    user = staff.user
+    user = staff.user  # the role is saved on the login account
     user.email = data["email"]
     user.username = data["email"]
     user.role = data["role"]
@@ -211,23 +208,21 @@ def _get_staff_for_update(staff_id):
 
 
 def _active_admin_count():
-    return Staff.objects.filter(role=Staff.Role.ADMIN, is_active=True, user__is_active=True).count()
+    return Staff.objects.filter(user__role=User.Role.ADMIN, user__is_active=True).count()
 
 
 @transaction.atomic
 def deactivate_staff(*, deactivated_by, staff_id) -> Staff:
-    """Deactivate instead of deleting (their records stay). They can no longer log in."""
+    """Deactivate instead of deleting (their records stay). Their login is disabled (user.is_active)."""
     _require_admin(deactivated_by)
     staff = _get_staff_for_update(staff_id)
-    if not staff.is_active:
+    if not staff.user.is_active:
         raise ValidationError(f"{staff.full_name} is already deactivated.")
     if staff.user_id == deactivated_by.id:
         raise ValidationError("You can't deactivate your own account.")
-    if staff.role == Staff.Role.ADMIN and _active_admin_count() <= 1:
+    if staff.user.role == User.Role.ADMIN and _active_admin_count() <= 1:
         raise ValidationError("This is the only active admin, so it can't be deactivated.")
 
-    staff.is_active = False
-    staff.save(update_fields=["is_active"])
     staff.user.is_active = False
     staff.user.save(update_fields=["is_active"])
     return staff
@@ -238,15 +233,13 @@ def reactivate_staff(*, reactivated_by, staff_id) -> Staff:
     """Let a deactivated staff member log in and work again."""
     _require_admin(reactivated_by)
     staff = _get_staff_for_update(staff_id)
-    if staff.is_active and staff.user.is_active:
+    if staff.user.is_active:
         raise ValidationError(f"{staff.full_name} is already active.")
-    if staff.role == Staff.Role.DOCTOR:
+    if staff.user.role == User.Role.DOCTOR:
         clash = _doctor_clashes(staff)
         if clash:
             raise ValidationError(clash)
 
-    staff.is_active = True
-    staff.save(update_fields=["is_active"])
     staff.user.is_active = True
     staff.user.save(update_fields=["is_active"])
     return staff
@@ -283,7 +276,7 @@ def week_roster(start, *, viewed_by):
     shifts = (
         Shift.objects.filter(shift_date__range=(days[0], days[-1]))
         .select_related("staff", "staff__user")
-        .order_by("shift_date", "session", "staff__role", "staff__full_name")
+        .order_by("shift_date", "session", "staff__user__role", "staff__full_name")
     )
     today = timezone.localdate()
     roster = [{"date": d, "is_today": d == today, "is_past": d < today,
@@ -293,7 +286,7 @@ def week_roster(start, *, viewed_by):
         by_date[shift.shift_date]["sessions"][shift.session].append(shift)
     for r in roster:  # doctors first, then nurses, then admins
         for session in r["sessions"]:
-            r["sessions"][session].sort(key=lambda s: (["DOCTOR", "NURSE", "ADMIN"].index(s.staff.role),
+            r["sessions"][session].sort(key=lambda s: (["DOCTOR", "NURSE", "ADMIN"].index(s.staff.user.role),
                                                        s.staff.full_name))
     return roster
 
@@ -315,7 +308,7 @@ def _check_shift(*, staff, shift_date, session, exclude_shift_id=None):
         errors["shift_date"] = "Date is required."
     elif shift_date < today:
         errors["shift_date"] = "Shifts can only be added for today or later."
-    if staff is not None and not (staff.is_active and staff.user.is_active):
+    if staff is not None and not staff.user.is_active:
         errors["staff"] = f"{staff.full_name} is deactivated. Reactivate them first."
     if errors or staff is None:
         return errors
@@ -325,9 +318,9 @@ def _check_shift(*, staff, shift_date, session, exclude_shift_id=None):
         same = same.exclude(pk=exclude_shift_id)
     if same.exists():
         errors["staff"] = f"{display_name(staff)} already works this session."
-    elif staff.role == Staff.Role.DOCTOR:
-        others = (Shift.objects.filter(shift_date=shift_date, session=session, staff__role=Staff.Role.DOCTOR,
-                                       staff__is_active=True, staff__user__is_active=True)
+    elif staff.user.role == User.Role.DOCTOR:
+        others = (Shift.objects.filter(shift_date=shift_date, session=session, staff__user__role=User.Role.DOCTOR,
+                                       staff__user__is_active=True)
                   .exclude(staff=staff).select_related("staff"))
         if exclude_shift_id:
             others = others.exclude(pk=exclude_shift_id)

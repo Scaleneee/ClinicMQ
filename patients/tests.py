@@ -156,7 +156,7 @@ class ListAndDetailScreenTests(PatientTestCase):
 
     def test_detail_shows_visit_timeline(self):
         p = self.make_patient(1)
-        doc = Staff.objects.create(user=self.doctor, full_name="Aisyah Rahman", role="DOCTOR", phone="012-0000000")
+        doc = Staff.objects.create(user=self.doctor, full_name="Aisyah Rahman", phone="012-0000000")
         ticket = self.add_ticket(p, "COMPLETED")
         c = Consultation.objects.create(ticket=ticket, doctor=doc, symptoms="Fever", diagnosis="Viral fever",
                                         consult_fee=Decimal("30"))
@@ -273,7 +273,7 @@ class MyProfileScreenTests(PatientTestCase):
 class MyVisitsScreenTests(PatientTestCase):
     def test_patient_sees_only_own_visits(self):
         mine, other = self.make_patient(1, online=True), self.make_patient(2, online=True)
-        doc = Staff.objects.create(user=self.doctor, full_name="Aisyah Rahman", role="DOCTOR", phone="012-0000000")
+        doc = Staff.objects.create(user=self.doctor, full_name="Aisyah Rahman", phone="012-0000000")
         for p, diagnosis, no in ((mine, "Viral fever", 1), (other, "Sprained ankle", 2)):
             Consultation.objects.create(ticket=self.add_ticket(p, no=no), doctor=doc, symptoms="-",
                                         diagnosis=diagnosis, consult_fee=Decimal("30"))

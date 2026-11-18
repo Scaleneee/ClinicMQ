@@ -1,9 +1,9 @@
 {# Row actions on the staff list (admin). #}
 <a class="btn btn-secondary btn-sm" href="{% url 'staff_edit' s.pk %}"><i class="bi bi-pencil"></i> Edit</a>
-{% if s.is_active and s.user.is_active %}
+{% if s.user.is_active %}
   {% if s.user_id != user.id %}
     <form method="post" action="{% url 'staff_deactivate' s.pk %}"
-          data-confirm-title="Deactivate {% if s.role == 'DOCTOR' %}Dr. {% endif %}{{ s.full_name }}?"
+          data-confirm-title="Deactivate {% if s.user.role == 'DOCTOR' %}Dr. {% endif %}{{ s.full_name }}?"
           data-confirm-text="They will no longer be able to log in, and they won't count as on duty. Their records and shifts are kept, and you can reactivate them later."
           data-confirm-button="Deactivate">
       {% csrf_token %}

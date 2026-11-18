@@ -22,9 +22,19 @@ class ClinicUserAdmin(UserAdmin):
 
 @admin.register(Staff)
 class StaffAdmin(admin.ModelAdmin):
+    # Role and active status are stored on the linked User.
     list_display = ("full_name", "role", "phone", "specialty", "is_active")
-    list_filter = ("role", "is_active")
+    list_filter = ("user__role", "user__is_active")
+    list_select_related = ("user",)
     search_fields = ("full_name", "user__username")
+
+    @admin.display(description="Role", ordering="user__role")
+    def role(self, obj):
+        return obj.user.get_role_display()
+
+    @admin.display(description="Active", boolean=True, ordering="user__is_active")
+    def is_active(self, obj):
+        return obj.user.is_active
 
 
 @admin.register(Shift)

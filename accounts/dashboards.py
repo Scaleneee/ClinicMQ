@@ -129,7 +129,7 @@ def admin_dashboard(request):
     week = acc.week_roster(acc.week_start(today), viewed_by=request.user)
     for day in week:
         day["no_doctor"] = [s for s, shifts in day["sessions"].items()
-                            if not day["is_past"] and not any(sh.staff.role == "DOCTOR" and sh.staff.is_active
+                            if not day["is_past"] and not any(sh.staff.user.role == "DOCTOR" and sh.staff.user.is_active
                                                               for sh in shifts)]
 
     return render(request, "accounts/dashboard_admin.html", {

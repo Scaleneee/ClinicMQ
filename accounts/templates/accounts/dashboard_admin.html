@@ -37,8 +37,8 @@
             <div class="cmq-week-session">
               <div class="cmq-week-session-label">{% if session == "MORNING" %}Morning{% else %}Night{% endif %}</div>
               {% for shift in shifts %}
-                <div class="cmq-week-name {% if shift.staff.role == 'DOCTOR' %}is-doctor{% endif %} {% if not shift.staff.is_active %}is-inactive{% endif %}">
-                  {% if shift.staff.role == "DOCTOR" %}Dr. {% endif %}{{ shift.staff.full_name }}
+                <div class="cmq-week-name {% if shift.staff.user.role == 'DOCTOR' %}is-doctor{% endif %} {% if not shift.staff.user.is_active %}is-inactive{% endif %}">
+                  {% if shift.staff.user.role == "DOCTOR" %}Dr. {% endif %}{{ shift.staff.full_name }}
                 </div>
               {% endfor %}
               {% if session in day.no_doctor %}<div class="cmq-week-name is-warning">No doctor</div>{% endif %}

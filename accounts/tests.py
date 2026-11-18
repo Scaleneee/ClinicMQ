@@ -9,7 +9,9 @@ from unittest import mock
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied, ValidationError
-from django.test import TestCase
+from django.db import connection
+from django.db.migrations.executor import MigrationExecutor
+from django.test import TestCase, TransactionTestCase
 from django.utils import timezone
 
 from accounts import services as acc
@@ -31,7 +33,7 @@ class StaffTestCase(TestCase):
     def make_staff(self, name, role, **extra):
         email = f"{name.lower().replace(' ', '.')}@clinic.my"
         user = User.objects.create_user(username=email, email=email, password="pw-Strong-123", role=role)
-        return Staff.objects.create(user=user, full_name=name, role=role, phone="012-0000000", **extra)
+        return Staff.objects.create(user=user, full_name=name, phone="012-0000000", **extra)
 
     def add(self, staff, day=TODAY, session="MORNING"):
         return acc.add_shift(added_by=self.admin_user, staff_id=staff.pk, shift_date=day, session=session)
@@ -46,7 +48,7 @@ class CreateUpdateStaffTests(StaffTestCase):
 
     def test_admin_adds_doctor_with_login(self):
         s = self.new()
-        self.assertEqual((s.full_name, s.role, s.phone, s.specialty),
+        self.assertEqual((s.full_name, s.user.role, s.phone, s.specialty),
                          ("Aisyah Rahman", "DOCTOR", "012-3456789", "General practice"))
         self.assertEqual((s.user.email, s.user.username, s.user.role), ("aisyah@clinic.my",) * 2 + ("DOCTOR",))
         self.assertTrue(s.user.check_password("Strong-Pass-123"))
@@ -82,8 +84,12 @@ class DeactivateTests(StaffTestCase):
     def test_deactivated_staff_cannot_log_in_and_reactivate(self):
         nurse = self.make_staff("Farah", "NURSE")
         acc.deactivate_staff(deactivated_by=self.admin_user, staff_id=nurse.pk)
+        nurse.user.refresh_from_db()
+        self.assertFalse(nurse.user.is_active)  # the active flag lives on the User only
         self.assertFalse(self.client.login(username="farah@clinic.my", password="pw-Strong-123"))
         acc.reactivate_staff(reactivated_by=self.admin_user, staff_id=nurse.pk)
+        nurse.user.refresh_from_db()
+        self.assertTrue(nurse.user.is_active)
         self.assertTrue(self.client.login(username="farah@clinic.my", password="pw-Strong-123"))
 
     def test_cannot_deactivate_self_or_last_admin(self):
@@ -495,3 +501,31 @@ class PatientDrawerTests(TestCase):
         page = self.client.get(reverse("dashboard"))
         self.assertNotContains(page, "cmqDrawer")
         self.assertContains(page, 'data-bs-target="#cmqNav"')
+
+
+class StaffFieldsMigrationTests(TransactionTestCase):
+    """0005 copies Staff.role / Staff.is_active onto the User before 0006 drops them."""
+
+    before = [("accounts", "0004_remove_user_first_name_remove_user_last_name")]
+    after = [("accounts", "0005_copy_staff_role_and_active_to_user")]
+
+    def test_role_and_active_flag_are_copied_to_the_user(self):
+        executor = MigrationExecutor(connection)
+        executor.migrate(self.before)
+        old = executor.loader.project_state(self.before).apps
+        OldUser, OldStaff = old.get_model("accounts", "User"), old.get_model("accounts", "Staff")
+        user = OldUser.objects.create(username="a@x.my", email="a@x.my", role="NURSE", is_active=True)
+        OldStaff.objects.create(user=user, full_name="Aisyah", role="DOCTOR", phone="012-0000000", is_active=False)
+        same = OldUser.objects.create(username="b@x.my", email="b@x.my", role="NURSE", is_active=True)
+        OldStaff.objects.create(user=same, full_name="Farah", role="NURSE", phone="012-0000000", is_active=True)
+
+        executor = MigrationExecutor(connection)
+        executor.loader.build_graph()
+        executor.migrate(self.after)
+        new = executor.loader.project_state(self.after).apps.get_model("accounts", "User")
+        self.assertEqual(new.objects.filter(pk=user.pk).values_list("role", "is_active").get(), ("DOCTOR", False))
+        self.assertEqual(new.objects.filter(pk=same.pk).values_list("role", "is_active").get(), ("NURSE", True))
+
+        executor = MigrationExecutor(connection)  # back to the latest schema for the other tests
+        executor.loader.build_graph()
+        executor.migrate(executor.loader.graph.leaf_nodes())

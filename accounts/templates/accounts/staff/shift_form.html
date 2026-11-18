@@ -33,7 +33,7 @@
   {% if shift %}
     <form method="post" action="{% url 'shift_delete' shift.pk %}" class="text-center mt-4"
           data-confirm-title="Remove this shift?"
-          data-confirm-text="{% if shift.staff.role == 'DOCTOR' %}Dr. {% endif %}{{ shift.staff.full_name }} will be taken off {{ shift.shift_date|date:'D j M' }} ({{ shift.get_session_display|lower }}).{% if shift.staff.role == 'DOCTOR' %} Without a doctor, queue numbers can't be issued for this session.{% endif %}"
+          data-confirm-text="{% if shift.staff.user.role == 'DOCTOR' %}Dr. {% endif %}{{ shift.staff.full_name }} will be taken off {{ shift.shift_date|date:'D j M' }} ({{ shift.get_session_display|lower }}).{% if shift.staff.user.role == 'DOCTOR' %} Without a doctor, queue numbers can't be issued for this session.{% endif %}"
           data-confirm-button="Remove shift">
       {% csrf_token %}
       <button type="submit" class="btn btn-quiet-danger">Remove shift</button>

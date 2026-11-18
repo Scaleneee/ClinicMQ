@@ -43,16 +43,16 @@
       </thead>
       <tbody>
         {% for s in staff %}
-          <tr class="{% if not s.is_active %}is-inactive{% endif %}">
+          <tr class="{% if not s.user.is_active %}is-inactive{% endif %}">
             <td>
-              {% if s.role == "DOCTOR" %}Dr. {% endif %}{{ s.full_name }}
+              {% if s.user.role == "DOCTOR" %}Dr. {% endif %}{{ s.full_name }}
               <div class="cmq-muted" style="font-size:14px">{{ s.user.email }}</div>
             </td>
-            <td>{{ s.get_role_display }}</td>
+            <td>{{ s.user.get_role_display }}</td>
             <td>{{ s.specialty|default:"–" }}</td>
             <td>{{ s.phone }}</td>
             <td>
-              {% if s.is_active and s.user.is_active %}
+              {% if s.user.is_active %}
                 <span class="cmq-badge cmq-badge-checked-in"><span class="cmq-badge-dot"></span>Active</span>
               {% else %}
                 <span class="cmq-badge cmq-badge-closed"><span class="cmq-badge-dot"></span>Inactive</span>

@@ -15,16 +15,16 @@ from django.views.decorators.http import require_POST
 
 from . import services as acc
 from .decorators import role_required
-from .models import Session, Shift, Staff
+from .models import Session, Shift, Staff, User
 from .staff_forms import ShiftForm, StaffForm
 
 STAFF_ROLES = ("NURSE", "DOCTOR", "ADMIN")
 
 ROLE_FILTERS = [
     ("all", "All", None),
-    ("doctors", "Doctors", Staff.Role.DOCTOR),
-    ("nurses", "Nurses", Staff.Role.NURSE),
-    ("admins", "Admins", Staff.Role.ADMIN),
+    ("doctors", "Doctors", User.Role.DOCTOR),
+    ("nurses", "Nurses", User.Role.NURSE),
+    ("admins", "Admins", User.Role.ADMIN),
 ]
 
 
@@ -73,7 +73,7 @@ def staff_list(request):
     everyone = list(acc.list_staff(viewed_by=request.user, query=query))
     pills, shown = [], everyone
     for k, label, role in ROLE_FILTERS:
-        matching = everyone if role is None else [s for s in everyone if s.role == role]
+        matching = everyone if role is None else [s for s in everyone if s.user.role == role]
         pills.append({"key": k, "label": label, "count": len(matching), "active": k == key})
         if k == key:
             shown = matching
@@ -113,7 +113,7 @@ def staff_create(request):
 @role_required("ADMIN")
 def staff_edit(request, pk):
     staff = get_object_or_404(Staff.objects.select_related("user"), pk=pk)
-    initial = {"full_name": staff.full_name, "email": staff.user.email, "role": staff.role,
+    initial = {"full_name": staff.full_name, "email": staff.user.email, "role": staff.user.role,
                "phone": staff.phone, "specialty": staff.specialty}
     form = StaffForm(request.POST or None, initial=initial, editing=True)
     if request.method == "POST" and form.is_valid():
@@ -185,7 +185,7 @@ def roster(request):
             "label": Session(session).label,
             "hours": f"{begin:%I:%M %p}".lstrip("0") + " – " + f"{end:%I:%M %p}".lstrip("0"),
             "cells": [{"day": d, "shifts": d["sessions"][session],
-                       "has_doctor": any(s.staff.role == Staff.Role.DOCTOR and s.staff.is_active
+                       "has_doctor": any(s.staff.user.role == User.Role.DOCTOR and s.staff.user.is_active
                                          for s in d["sessions"][session])} for d in days],
         })
     return render(request, "accounts/staff/roster.html", {
@@ -205,10 +205,10 @@ def roster(request):
 # ---------------------------------------------------------------------------
 def _staff_choices():
     """Active staff, doctors first: [(id, "Dr. Aisyah Rahman · Doctor"), ...]"""
-    order = {Staff.Role.DOCTOR: 0, Staff.Role.NURSE: 1, Staff.Role.ADMIN: 2}
-    staff = Staff.objects.filter(is_active=True, user__is_active=True)
-    return [(s.pk, f"{acc.display_name(s)} · {s.get_role_display()}")
-            for s in sorted(staff, key=lambda s: (order[s.role], s.full_name))]
+    order = {User.Role.DOCTOR: 0, User.Role.NURSE: 1, User.Role.ADMIN: 2}
+    staff = Staff.objects.filter(user__is_active=True).select_related("user")
+    return [(s.pk, f"{acc.display_name(s)} · {s.user.get_role_display()}")
+            for s in sorted(staff, key=lambda s: (order[s.user.role], s.full_name))]
 
 
 def _roster_url_for(day):

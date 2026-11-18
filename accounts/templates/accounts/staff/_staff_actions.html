@@ -7,7 +7,7 @@
           data-confirm-text="They will no longer be able to log in, and they won't count as on duty. Their records and shifts are kept, and you can reactivate them later."
           data-confirm-button="Deactivate">
       {% csrf_token %}
-      <button type="submit" class="btn btn-sm btn-quiet-danger">Deactivate</button>
+      <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-person-x"></i> Deactivate</button>
     </form>
   {% endif %}
 {% else %}

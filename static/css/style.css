@@ -831,3 +831,8 @@ a.cmq-tag-mc:hover { border-color: var(--cmq-ink); color: var(--cmq-ink); }
   .cmq-drawer .nav-link .bi { width: auto; color: inherit; }
   .cmq-drawer .nav-link.active { font-weight: 400; color: var(--cmq-ink); text-decoration: underline; }
 }
+/* Patients on phones: menu button on the left, before the ClinicMQ logo */
+@media (max-width: 991.98px) {
+  .cmq-navbar-patient .container-xl { justify-content: flex-start; gap: 14px; }
+  .cmq-navbar-patient .navbar-toggler { order: -1; }
+}

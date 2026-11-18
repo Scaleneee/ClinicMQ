@@ -10,12 +10,6 @@
       <h1 class="cmq-title">Billing</h1>
       <p class="cmq-subtitle">Bills for completed visits.</p>
     </div>
-    <div class="cmq-page-actions">
-      {% if not is_nurse %}
-        {% url "billing:sales_summary" as summary_url %}
-        {% if summary_url %}<a class="btn btn-secondary" href="{{ summary_url }}"><i class="bi bi-graph-up"></i> Sales summary</a>{% endif %}
-      {% endif %}
-    </div>
   </div>
 
   {% if to_bill %}

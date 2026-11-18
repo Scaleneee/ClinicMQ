@@ -10,8 +10,6 @@
       <p class="cmq-subtitle">Doctors, nurses and admins who work at the clinic.</p>
     </div>
     <div class="cmq-page-actions">
-      {% url "roster" as roster_url %}
-      {% if roster_url %}<a class="btn btn-secondary" href="{{ roster_url }}"><i class="bi bi-calendar-week"></i> Weekly roster</a>{% endif %}
       {% if is_admin %}
         {% url "staff_create" as create_url %}
         {% if create_url %}<a class="btn btn-primary" href="{{ create_url }}"><i class="bi bi-person-plus"></i> Add staff</a>{% endif %}

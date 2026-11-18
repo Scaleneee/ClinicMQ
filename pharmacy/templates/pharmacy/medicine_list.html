@@ -11,8 +11,6 @@
     </div>
     <div class="cmq-page-actions">
       {% if is_nurse %}
-        {% url "pharmacy:dispense_list" as dispense_url %}
-        {% if dispense_url %}<a class="btn btn-secondary" href="{{ dispense_url }}"><i class="bi bi-bag-check"></i> Dispense</a>{% endif %}
         {% url "pharmacy:medicine_create" as create_url %}
         {% if create_url %}<a class="btn btn-primary" href="{{ create_url }}"><i class="bi bi-plus-lg"></i> Add medicine</a>{% endif %}
       {% endif %}

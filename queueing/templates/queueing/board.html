@@ -15,9 +15,6 @@
       </p>
     </div>
     <div class="cmq-page-actions">
-      {% if can_act %}
-        <a class="btn btn-primary" href="{% url 'queueing:walk_in' %}"><i class="bi bi-person-plus"></i> Walk-in</a>
-      {% endif %}
       {% url "queueing:tv" as tv_url %}
       {% if tv_url %}
         <a class="btn btn-secondary" href="{{ tv_url }}" target="_blank" rel="noopener"><i class="bi bi-tv"></i> TV board</a>

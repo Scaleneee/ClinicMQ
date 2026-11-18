@@ -297,6 +297,17 @@ class RosterScreenTests(StaffTestCase):
         self.client.force_login(self.admin_user)
         self.assertContains(self.client.get(reverse("roster")), "cmq-chip-inactive")
 
+    def test_doctor_and_nurse_view_only(self):
+        for staff in (self.doc, self.nurse):
+            self.client.force_login(staff.user)
+            page = self.client.get(reverse("roster"))
+            self.assertContains(page, f'href="{reverse("roster")}"')  # Schedules in their menu
+            self.assertContains(page, "Dr. Aisyah Rahman")
+            self.assertNotContains(page, "Add shift")
+            self.assertNotContains(page, reverse("shift_create"))
+            self.assertNotContains(page, "/edit/")                    # chips aren't links
+            self.assertEqual(self.client.get(reverse("shift_create")).status_code, 403)
+
 
 class ShiftScreenTests(StaffTestCase):
     def setUp(self):

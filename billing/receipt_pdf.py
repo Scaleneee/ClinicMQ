@@ -29,7 +29,7 @@ def _money(value):
 
 def _when(value):
     local = timezone.localtime(value)
-    return f"{local:%d/%m/%Y}, " + f"{local:%I:%M %p}".lstrip("0")
+    return f"{local.day} {local:%b %Y}, {local:%I:%M %p}".replace(", 0", ", ")
 
 
 def _content(bill):

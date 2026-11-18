@@ -21,7 +21,7 @@ RED = (0.75, 0.22, 0.17)
 
 
 def _date(d):
-    return f"{d:%d/%m/%Y}"
+    return f"{d.day} {d:%B %Y}"
 
 
 def build_mc_pdf(mc):

@@ -276,7 +276,7 @@ class RosterScreenTests(StaffTestCase):
     def test_week_grid(self):
         self.client.force_login(self.nurse.user)  # everyone on the staff can view
         page = self.client.get(reverse("roster"))
-        self.assertContains(page, "02/11/2026 – 08/11/2026")
+        self.assertContains(page, "2–8 Nov 2026")
         self.assertContains(page, "Dr. Aisyah Rahman")
         self.assertContains(page, "Nurse Farah Lim")
         self.assertContains(page, "9:00 AM – 1:00 PM")
@@ -286,11 +286,11 @@ class RosterScreenTests(StaffTestCase):
     def test_week_navigation(self):
         self.client.force_login(self.admin_user)
         page = self.client.get(reverse("roster") + "?week=2026-11-12")  # any day -> its Monday
-        self.assertContains(page, "09/11/2026 – 15/11/2026")
+        self.assertContains(page, "9–15 Nov 2026")
         self.assertContains(page, "?week=2026-11-02")  # previous
         self.assertContains(page, "This week")
         page = self.client.get(reverse("roster") + "?week=2026-11-30")
-        self.assertContains(page, "30/11/2026 – 06/12/2026")
+        self.assertContains(page, "30 Nov – 6 Dec 2026")
 
     def test_deactivated_staff_greyed_out(self):
         acc.deactivate_staff(deactivated_by=self.admin_user, staff_id=self.nurse.pk)
@@ -310,7 +310,7 @@ class ShiftScreenTests(StaffTestCase):
         self.assertContains(page, "?date=2026-11-04&session=MORNING")  # quick add link
         page = self.client.post(reverse("shift_create"),
                                 {"staff": self.doc.pk, "shift_date": "2026-11-04", "session": "MORNING"}, follow=True)
-        self.assertContains(page, "Dr. Aisyah Rahman added to Wed 04/11/2026 (morning).")
+        self.assertContains(page, "Dr. Aisyah Rahman added to Wed 04 Nov (morning).")
         self.assertEqual(acc.doctor_on_duty(TODAY, "MORNING"), self.doc)
 
     def test_second_doctor_shows_ui_md_error(self):
@@ -327,7 +327,7 @@ class ShiftScreenTests(StaffTestCase):
         shift.refresh_from_db()
         self.assertEqual((shift.shift_date, shift.session), (dt.date(2026, 11, 5), "NIGHT"))
         page = self.client.post(reverse("shift_delete", args=[shift.pk]), follow=True)
-        self.assertContains(page, "Dr. Aisyah Rahman removed from Thu 05/11/2026.")
+        self.assertContains(page, "Dr. Aisyah Rahman removed from Thu 05 Nov.")
         self.assertFalse(Shift.objects.exists())
 
     def test_past_shift_cannot_be_edited(self):

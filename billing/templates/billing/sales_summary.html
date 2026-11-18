@@ -12,21 +12,23 @@
     </div>
 
     {# Date range, top right #}
-    <div class="cmq-sales-range">
-      <form method="get" class="d-flex flex-wrap align-items-end gap-2">
-        <div class="cmq-field mb-0"><label for="sales-start">From</label>
-          <input type="date" id="sales-start" name="start" value="{{ start|date:'Y-m-d' }}"></div>
-        <div class="cmq-field mb-0"><label for="sales-end">To</label>
-          <input type="date" id="sales-end" name="end" value="{{ end|date:'Y-m-d' }}"></div>
-        <button type="submit" class="btn btn-secondary"><i class="bi bi-arrow-repeat"></i> Show</button>
-      </form>
-      <nav class="cmq-pills mb-0" aria-label="Quick ranges">
-        {% for p in presets %}
-          <a class="cmq-pill {% if p.active %}active{% endif %}" href="?start={{ p.start|date:'Y-m-d' }}&end={{ p.end|date:'Y-m-d' }}"
-             {% if p.active %}aria-current="page"{% endif %}>{{ p.label }}</a>
-        {% endfor %}
-      </nav>
-    </div>
+    <form method="get" class="cmq-sales-range" id="sales-range-form">
+      <div class="cmq-field mb-0"><label for="sales-start">From</label>
+        <input type="date" id="sales-start" name="start" value="{{ start|date:'Y-m-d' }}"></div>
+      <div class="cmq-field mb-0"><label for="sales-end">To</label>
+        <input type="date" id="sales-end" name="end" value="{{ end|date:'Y-m-d' }}"></div>
+      <div class="cmq-field mb-0"><label for="sales-preset">Range</label>
+        {# Choosing a range fills in both dates; typing a date yourself switches this to "–". #}
+        <select id="sales-preset">
+          <option value="" {% if not preset_active %}selected{% endif %}>–</option>
+          {% for p in presets %}
+            <option value="{{ forloop.counter }}" data-start="{{ p.start|date:'Y-m-d' }}" data-end="{{ p.end|date:'Y-m-d' }}"
+                    {% if p.active %}selected{% endif %}>{{ p.label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <button type="submit" class="btn btn-secondary"><i class="bi bi-arrow-repeat"></i> Show</button>
+    </form>
   </div>
 
   {% if error %}
@@ -93,4 +95,27 @@
       </div>
     </div>
   {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Range dropdown: picking one fills in From/To and shows it; typing a date sets it back to "–".
+  (function () {
+    var form = document.getElementById("sales-range-form");
+    var start = document.getElementById("sales-start");
+    var end = document.getElementById("sales-end");
+    var preset = document.getElementById("sales-preset");
+
+    preset.addEventListener("change", function () {
+      var chosen = preset.options[preset.selectedIndex];
+      if (!chosen.value) return;
+      start.value = chosen.dataset.start;
+      end.value = chosen.dataset.end;
+      form.submit();
+    });
+    [start, end].forEach(function (box) {
+      box.addEventListener("input", function () { preset.value = ""; });
+    });
+  })();
+</script>
 {% endblock %}

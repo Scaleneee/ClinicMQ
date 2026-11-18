@@ -362,3 +362,13 @@ class IntegrationTests(BillingTestCase):
         self.assertContains(page, f"/billing/{bill.pk}/")         # unpaid bill on the nurse dashboard
         self.client.force_login(self.admin.user)
         self.assertContains(self.client.get("/accounts/dashboard/"), f"/billing/{bill.pk}/")
+
+
+class SalesRangeDropdownTests(BillingTestCase):
+    def test_dropdown_shows_preset_or_dash(self):
+        self.client.force_login(self.admin.user)
+        page = self.client.get("/billing/sales/").content.decode()
+        self.assertRegex(page, r'<option value="2"[^>]*selected>Last 7 days</option>')
+        self.assertIn('<option value="" >–</option>', page)
+        page = self.client.get("/billing/sales/?start=2026-11-01&end=2026-11-03").content.decode()
+        self.assertIn('<option value="" selected>–</option>', page)

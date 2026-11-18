@@ -239,16 +239,18 @@ def sales_summary(request):
     def preset(label, s, e):
         return {"label": label, "start": s, "end": e, "active": (s, e) == (start, end)}
 
+    presets = [
+        preset("Today", today, today),
+        preset("Last 7 days", today - dt.timedelta(days=6), today),
+        preset("This month", today.replace(day=1), today),
+        preset("Last 30 days", today - dt.timedelta(days=29), today),
+    ]
     return render(request, "billing/sales_summary.html", {
         "start": start,
         "end": end,
         "error": error,
         "s": summary,
         "days": list(reversed(summary["days"])) if summary else [],
-        "presets": [
-            preset("Today", today, today),
-            preset("Last 7 days", today - dt.timedelta(days=6), today),
-            preset("This month", today.replace(day=1), today),
-            preset("Last 30 days", today - dt.timedelta(days=29), today),
-        ],
+        "presets": presets,
+        "preset_active": any(p["active"] for p in presets),
     })

@@ -458,7 +458,7 @@ class DoctorDashboardTests(DashboardTestCase):
         stats = page.context["stats"]
         self.assertEqual((stats["waiting"], stats["seen"]), (3, 1))
         self.assertEqual(stats["next_shift"].shift_date, TODAY)
-        self.assertContains(page, "Open doctor console")
+        self.assertNotContains(page, "Open doctor console")      # the navbar links to it
         self.assertContains(page, "Viral fever")                 # recent consultation
         self.assertNotContains(page, "Visits waiting for your notes")
 

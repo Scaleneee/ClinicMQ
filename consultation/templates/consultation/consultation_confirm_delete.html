@@ -16,7 +16,7 @@
       <div class="cmq-auth-icon is-danger"><i class="bi bi-trash"></i></div>
       <h1 class="cmq-auth-title mb-2">Delete this consultation?</h1>
       <p class="cmq-muted mb-4">
-        {{ c.diagnosis }} · {{ c.ticket.patient.full_name|title }} · {{ c.created_at|date:"j M Y" }}.
+        {{ c.diagnosis }} · {{ c.ticket.patient.full_name|title }} · {{ c.created_at|date:"d/m/Y" }}.
         Its prescription{% if mc %} and MC {{ mc.mc_no }}{% endif %} will be deleted too. This can't be undone.
       </p>
       <form method="post" class="d-flex gap-2 justify-content-center">

@@ -5,7 +5,7 @@
 {% block content %}
   <div class="cmq-page-header">
     <div>
-      <p class="cmq-eyebrow">{% now "l, j F Y" %}</p>
+      <p class="cmq-eyebrow">{% now "l, d/m/Y" %}</p>
       <h1 class="cmq-title">Weekly roster</h1>
       <p class="cmq-subtitle">Who works each Morning and Night session. One doctor per session.</p>
     </div>
@@ -32,7 +32,7 @@
           <th class="cmq-roster-session"></th>
           {% for d in days %}
             <th class="{% if d.is_today %}is-today{% endif %}">
-              {{ d.date|date:"D" }}<div class="cmq-roster-date">{{ d.date|date:"j M" }}</div>
+              {{ d.date|date:"D" }}<div class="cmq-roster-date">{{ d.date|date:"d/m/Y" }}</div>
               {% if d.is_today %}<span class="visually-hidden">(today)</span>{% endif %}
             </th>
           {% endfor %}
@@ -52,7 +52,7 @@
                 {% endif %}
                 {% if is_admin and not cell.day.is_past %}
                   <a class="cmq-roster-add" href="{% url 'shift_create' %}?date={{ cell.day.date|date:'Y-m-d' }}&session={{ row.key }}&week={{ start|date:'Y-m-d' }}"
-                     aria-label="Add shift on {{ cell.day.date|date:'D j M' }} {{ row.label }}"><i class="bi bi-plus"></i> Add</a>
+                     aria-label="Add shift on {{ cell.day.date|date:'D d/m/Y' }} {{ row.label }}"><i class="bi bi-plus"></i> Add</a>
                 {% endif %}
               </td>
             {% endfor %}

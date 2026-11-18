@@ -12,7 +12,7 @@
     <div class="cmq-ticket-no mb-0" style="font-size:36px">{{ c.ticket.queue_no|queue_no }}</div>
     <div class="flex-fill">
       <strong>{{ c.ticket.patient.full_name|title }}</strong>
-      <div class="cmq-muted">{{ c.diagnosis }} · Dr. {{ c.doctor.full_name }} · {{ c.created_at|date:"j M Y" }}</div>
+      <div class="cmq-muted">{{ c.diagnosis }} · Dr. {{ c.doctor.full_name }} · {{ c.created_at|date:"d/m/Y" }}</div>
     </div>
   </div>
 
@@ -46,7 +46,7 @@
                 {{ i.medicine.name }}
                 {% if i.dispensed %}
                   <div class="cmq-muted" style="font-size:14px">
-                    Dispensed{% if i.dispensed_by %} by {{ i.dispensed_by.full_name }}{% endif %} · {{ i.dispensed_at|date:"j M" }}, {{ i.dispensed_at|time:"g:i A" }}
+                    Dispensed{% if i.dispensed_by %} by {{ i.dispensed_by.full_name }}{% endif %} · {{ i.dispensed_at|date:"d/m/Y" }}, {{ i.dispensed_at|time:"g:i A" }}
                   </div>
                 {% elif i.problem %}
                   <div class="cmq-error mt-1">{{ i.problem }}</div>

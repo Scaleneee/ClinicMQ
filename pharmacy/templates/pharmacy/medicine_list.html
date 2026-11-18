@@ -5,7 +5,7 @@
 {% block content %}
   <div class="cmq-page-header">
     <div>
-      <p class="cmq-eyebrow">{% now "l, j F Y" %}</p>
+      <p class="cmq-eyebrow">{% now "l, d/m/Y" %}</p>
       <h1 class="cmq-title">Medicine</h1>
       <p class="cmq-subtitle">Stock, prices and expiry dates.</p>
     </div>
@@ -58,7 +58,7 @@
             <td>{{ m.category }}</td>
             <td class="text-end text-nowrap">RM {{ m.unit_price|floatformat:2 }}<div class="cmq-muted" style="font-size:14px">per {{ m.unit }}</div></td>
             <td class="text-end text-nowrap">{{ m.quantity }} {{ m.unit }}<div class="cmq-muted" style="font-size:14px">reorder at {{ m.reorder_level }}</div></td>
-            <td class="text-nowrap">{{ m.expiry_date|date:"j M Y" }}</td>
+            <td class="text-nowrap">{{ m.expiry_date|date:"d/m/Y" }}</td>
             <td>
               <div class="d-flex flex-wrap gap-1">
                 {% for label, style in m.badges %}

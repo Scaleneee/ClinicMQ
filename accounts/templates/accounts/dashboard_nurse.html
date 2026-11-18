@@ -6,7 +6,7 @@
 {% block content %}
   <div class="cmq-page-header">
     <div>
-      <p class="cmq-eyebrow">{% now "l, j F Y" %}</p>
+      <p class="cmq-eyebrow">{% now "l, d/m/Y" %}</p>
       <h1 class="cmq-title">Welcome, Nurse {{ name }}</h1>
       <p class="cmq-subtitle">Here's the clinic today.</p>
     </div>
@@ -89,7 +89,7 @@
         </div>
         {% for m in alerts %}
           <div class="cmq-list-row">
-            <span class="flex-fill">{{ m.name }}<div class="cmq-muted" style="font-size:14px">{{ m.quantity }} {{ m.unit }} · exp {{ m.expiry_date|date:"j M Y" }}</div></span>
+            <span class="flex-fill">{{ m.name }}<div class="cmq-muted" style="font-size:14px">{{ m.quantity }} {{ m.unit }} · exp {{ m.expiry_date|date:"d/m/Y" }}</div></span>
             <span class="cmq-badge cmq-badge-{{ m.alert_style }}"><span class="cmq-badge-dot"></span>{{ m.alert }}</span>
           </div>
         {% empty %}

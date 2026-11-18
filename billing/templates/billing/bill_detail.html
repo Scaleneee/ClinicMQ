@@ -53,7 +53,7 @@
       </div>
       <div class="col-sm-6 text-sm-end">
         <div class="cmq-muted">Date</div>
-        <div>{{ bill.created_at|date:"j M Y" }}, {{ bill.created_at|time:"g:i A" }}</div>
+        <div>{{ bill.created_at|date:"d/m/Y" }}, {{ bill.created_at|time:"g:i A" }}</div>
         <div class="cmq-muted">Dr. {{ bill.consultation.doctor.full_name }} · {{ bill.consultation.diagnosis }}</div>
       </div>
     </div>
@@ -79,7 +79,7 @@
       {% if bill.status == "PAID" %}
         <div class="cmq-money-row"><span>Paid by {{ bill.get_payment_method_display }}</span><span>{{ bill.amount_paid|rm }}</span></div>
         {% if change is not None %}<div class="cmq-money-row"><span>Change</span><span>{{ change|rm }}</span></div>{% endif %}
-        <p class="cmq-muted mb-0 mt-2" style="font-size:14px">Paid on {{ bill.paid_at|date:"j M Y" }}, {{ bill.paid_at|time:"g:i A" }}</p>
+        <p class="cmq-muted mb-0 mt-2" style="font-size:14px">Paid on {{ bill.paid_at|date:"d/m/Y" }}, {{ bill.paid_at|time:"g:i A" }}</p>
       {% elif bill.status == "UNPAID" %}
         <p class="cmq-muted mb-0 mt-2">Not paid yet.</p>
       {% endif %}

@@ -12,7 +12,7 @@
     <div class="cmq-ticket-no mb-0" style="font-size:36px">{{ c.ticket.queue_no|queue_no }}</div>
     <div class="flex-fill">
       <strong>{{ c.ticket.patient.full_name|title }}</strong>
-      <div class="cmq-muted">{{ c.diagnosis }} · Dr. {{ c.doctor.full_name }} · {{ c.created_at|date:"j M Y" }}</div>
+      <div class="cmq-muted">{{ c.diagnosis }} · Dr. {{ c.doctor.full_name }} · {{ c.created_at|date:"d/m/Y" }}</div>
     </div>
   </div>
 

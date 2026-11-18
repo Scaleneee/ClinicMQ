@@ -477,3 +477,21 @@ class DoctorDashboardTests(DashboardTestCase):
         page = self.client.get(reverse("dashboard"))
         self.assertContains(page, "Dr. Aisyah Rahman is on duty")
         self.assertEqual(page.context["stats"]["seen"], 0)
+
+
+class PatientDrawerTests(TestCase):
+    def test_patient_menu_is_a_drawer_with_logout(self):
+        user = User.objects.create_user(username="siti@x.my", email="siti@x.my", password="x", role="PATIENT")
+        self.client.force_login(user)
+        page = self.client.get(reverse("patients:my_visits"))
+        self.assertContains(page, 'data-bs-toggle="offcanvas" data-bs-target="#cmqDrawer"')
+        self.assertContains(page, 'class="offcanvas offcanvas-start cmq-drawer"')
+        self.assertContains(page, "My bills")
+        self.assertContains(page, "Log out")
+
+    def test_staff_keep_the_normal_menu(self):
+        user = User.objects.create_user(username="kumar@x.my", email="kumar@x.my", password="x", role="ADMIN")
+        self.client.force_login(user)
+        page = self.client.get(reverse("dashboard"))
+        self.assertNotContains(page, "cmqDrawer")
+        self.assertContains(page, 'data-bs-target="#cmqNav"')

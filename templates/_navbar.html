@@ -3,7 +3,55 @@
   <div class="container-xl">
     <a class="cmq-wordmark" href="{% url 'home' %}">ClinicMQ</a>
 
-    {% if user.is_authenticated %}
+    {% if user.is_authenticated and user.role == "PATIENT" %}
+      {# Patients: on phones the menu is a drawer that slides in from the left over the page. #}
+      {# On desktop (lg and up) the same links show in the bar as usual. #}
+      <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#cmqDrawer"
+              aria-controls="cmqDrawer" aria-label="Open menu">
+        <i class="bi bi-list"></i>
+      </button>
+
+      <div class="offcanvas offcanvas-start cmq-drawer" tabindex="-1" id="cmqDrawer" aria-labelledby="cmqDrawerName">
+        <div class="offcanvas-header">
+          <h2 class="cmq-drawer-name" id="cmqDrawerName">{{ user.get_full_name }}</h2>
+          <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close menu"></button>
+        </div>
+        <div class="offcanvas-body">
+          <ul class="navbar-nav mx-lg-auto gap-lg-3">
+            {% include "_nav_link.html" with name="dashboard" icon="house" label="Home" %}
+            {% include "_nav_link.html" with name="queueing:get_number" icon="plus-lg" label="Get number" %}
+            {% include "_nav_link.html" with name="queueing:my_queue" icon="ticket-perforated" label="My queue" %}
+            {% include "_nav_link.html" with name="patients:my_visits" icon="clock-history" label="My visits" %}
+            {% include "_nav_link.html" with name="billing:my_bills" icon="receipt" label="My bills" %}
+            {% include "_nav_link.html" with name="patients:my_profile" icon="person" label="Profile" %}
+          </ul>
+
+          {# Phone: Log out at the bottom of the drawer #}
+          <form method="post" action="{% url 'logout' %}" class="cmq-drawer-logout d-lg-none">
+            {% csrf_token %}
+            <button type="submit"><i class="bi bi-box-arrow-right"></i> Log out</button>
+          </form>
+
+          {# Desktop: the usual user menu on the right #}
+          <div class="dropdown d-none d-lg-block">
+            <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+              <i class="bi bi-person-circle"></i>
+              {{ user.get_full_name }}
+              <span class="cmq-user-role">[{{ user.get_role_display }}]</span>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li>
+                <form method="post" action="{% url 'logout' %}">
+                  {% csrf_token %}
+                  <button type="submit" class="dropdown-item"><i class="bi bi-box-arrow-right"></i> Logout</button>
+                </form>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+    {% elif user.is_authenticated %}
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#cmqNav"
               aria-controls="cmqNav" aria-expanded="false" aria-label="Toggle navigation">
         <i class="bi bi-list"></i>
@@ -12,14 +60,7 @@
       <div class="collapse navbar-collapse" id="cmqNav">
         {# Role menus from UI.md §4. Links to pages not built yet show as "Coming soon". #}
         <ul class="navbar-nav mx-auto gap-lg-3">
-          {% if user.role == "PATIENT" %}
-            {% include "_nav_link.html" with name="dashboard" icon="house" label="Home" %}
-            {% include "_nav_link.html" with name="queueing:get_number" icon="plus-circle" label="Get number" %}
-            {% include "_nav_link.html" with name="queueing:my_queue" icon="ticket-perforated" label="My queue" %}
-            {% include "_nav_link.html" with name="patients:my_visits" icon="clock-history" label="My visits" %}
-            {% include "_nav_link.html" with name="billing:my_bills" icon="receipt" label="My bills" %}
-            {% include "_nav_link.html" with name="patients:my_profile" icon="person" label="Profile" %}
-          {% elif user.role == "NURSE" %}
+          {% if user.role == "NURSE" %}
             {% include "_nav_link.html" with name="dashboard" icon="grid" label="Dashboard" %}
             {% include "_nav_link.html" with name="queueing:board" icon="list-ol" label="Queue board" %}
             {% include "_nav_link.html" with name="queueing:walk_in" icon="person-plus" label="Walk-in" %}

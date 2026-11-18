@@ -381,8 +381,9 @@ class NurseScreenTests(ScreenTestCase):
         self.assertContains(page, "Dr. Aisyah Rahman")
         self.assertContains(page, 'Checked in <span class="cmq-pill-count">1</span>')
         page = self.client.get(reverse("queueing:board_live") + "?status=not_arrived")
-        self.assertContains(page, "P1")
-        self.assertNotContains(page, "P2")
+        # Look for the name as a whole word: random CSRF tokens on the page can contain "P2".
+        self.assertRegex(page.content.decode(), r"(?<![A-Za-z0-9])P1(?![A-Za-z0-9])")
+        self.assertNotRegex(page.content.decode(), r"(?<![A-Za-z0-9])P2(?![A-Za-z0-9])")
 
     def test_board_check_in_and_cancel(self):
         t = self.take(1, now=at(9, 30))

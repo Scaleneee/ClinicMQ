@@ -802,3 +802,25 @@ a.cmq-tag-mc:hover { border-color: var(--cmq-ink); color: var(--cmq-ink); }
 .flatpickr-day.today { border-color: var(--cmq-red); }
 .flatpickr-day.today:hover { background: var(--cmq-wash); color: var(--cmq-ink); border-color: var(--cmq-red); }
 .flatpickr-months .flatpickr-month, .flatpickr-current-month .flatpickr-monthDropdown-months { font-family: var(--cmq-font); }
+
+/* ---------- Patient drawer (phones): slides in from the left over the page ---------- */
+.cmq-drawer.offcanvas { --bs-offcanvas-width: min(280px, 80vw); border-right: 1px solid var(--cmq-line); }
+.cmq-drawer .offcanvas-header { padding: 22px 20px 10px; }
+.cmq-drawer-name { font-family: var(--cmq-font); font-size: 21px; font-weight: 700; margin: 0; }
+.cmq-drawer .offcanvas-body { display: flex; flex-direction: column; padding: 4px 20px 24px; }
+.cmq-drawer .nav-link { font-size: 18px; color: var(--cmq-ink); padding: 9px 0; gap: 10px; }
+.cmq-drawer .nav-link .bi { width: 20px; color: var(--cmq-muted); }
+.cmq-drawer .nav-link.active { font-weight: 700; text-decoration: none; }
+.cmq-drawer .nav-link.active .bi { color: var(--cmq-ink); }
+.cmq-drawer-logout { margin-top: auto; padding-top: 16px; }
+.cmq-drawer-logout button {
+  display: inline-flex; align-items: center; gap: 10px; padding: 9px 0;
+  border: 0; background: none; font: inherit; font-size: 18px; color: var(--cmq-red);
+}
+@media (min-width: 992px) {
+  /* Desktop: the drawer turns back into the normal bar */
+  .cmq-drawer .offcanvas-body { flex-direction: row; align-items: center; flex-grow: 1; padding: 0; }
+  .cmq-drawer .nav-link { font-size: inherit; color: var(--cmq-muted); padding: var(--bs-nav-link-padding-y) 0; gap: 6px; }
+  .cmq-drawer .nav-link .bi { width: auto; color: inherit; }
+  .cmq-drawer .nav-link.active { font-weight: 400; color: var(--cmq-ink); text-decoration: underline; }
+}

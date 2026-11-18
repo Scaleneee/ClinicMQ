@@ -10,7 +10,6 @@
       <p class="cmq-subtitle">Who works each Morning and Night session. One doctor per session.</p>
     </div>
     <div class="cmq-page-actions">
-      <a class="btn btn-secondary" href="{% url 'staff_list' %}"><i class="bi bi-person-badge"></i> Staff</a>
       {% if is_admin %}
         {% url "shift_create" as add_url %}
         {% if add_url %}<a class="btn btn-primary" href="{{ add_url }}?week={{ start|date:'Y-m-d' }}"><i class="bi bi-plus-lg"></i> Add shift</a>{% endif %}

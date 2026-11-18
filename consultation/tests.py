@@ -198,7 +198,7 @@ class ListDetailScreenTests(ConsultationTestCase):
 
         page = self.client.get(reverse("consultation:detail", args=[c.pk]))
         for text in ("Fever and cough, 2 days", "Paracetamol 500mg", "RM 10.00", "Waiting",
-                     "MC-20261104-001", "04/11/2026 – 05/11/2026", "RM 40.00", "Not billed yet"):
+                     "MC-20261104-001", "4 Nov – 5 Nov 2026", "RM 40.00", "Not billed yet"):
             self.assertContains(page, text)
 
     def test_doctor_sees_visits_needing_notes(self):

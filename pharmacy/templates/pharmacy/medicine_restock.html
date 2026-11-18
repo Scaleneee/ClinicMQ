@@ -25,7 +25,7 @@
         {{ medicine.quantity }} {{ medicine.unit }}
         {% for label, style in badges %}{% include "_status_badge.html" with label=label style=style %}{% endfor %}
       </dd>
-      <dt>Current expiry</dt><dd>{{ medicine.expiry_date|date:"d/m/Y" }}</dd>
+      <dt>Current expiry</dt><dd>{{ medicine.expiry_date|date:"j M Y" }}</dd>
     </dl>
     {% include "_field.html" with field=form.add_quantity %}
     {% include "_field.html" with field=form.expiry_date optional=True %}

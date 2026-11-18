@@ -47,7 +47,7 @@
       <h2 class="cmq-section-title">Upcoming shifts</h2>
       {% for shift in upcoming %}
         <div class="d-flex justify-content-between py-2 {% if not forloop.last %}border-bottom{% endif %}">
-          <span>{{ shift.shift_date|date:"D, d/m/Y" }}</span><span class="cmq-muted">{{ shift.get_session_display }}</span>
+          <span>{{ shift.shift_date|date:"D, j M Y" }}</span><span class="cmq-muted">{{ shift.get_session_display }}</span>
         </div>
       {% empty %}
         <p class="cmq-muted mb-0">No upcoming shifts.</p>

@@ -6,7 +6,7 @@
 {% block content %}
   <div class="cmq-page-header">
     <div>
-      <p class="cmq-eyebrow">{% now "l, d/m/Y" %}</p>
+      <p class="cmq-eyebrow">{% now "l, j F Y" %}</p>
       <h1 class="cmq-title">Queue board</h1>
       <p class="cmq-subtitle">
         {{ o.session_label }} session{% if not o.is_open %} (closed){% endif %}

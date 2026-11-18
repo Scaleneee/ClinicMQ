@@ -6,7 +6,7 @@
   <ol class="cmq-timeline">
     {% for v in visits %}
       <li>
-        <div class="cmq-timeline-date">{{ v.created_at|date:"d/m/Y" }}</div>
+        <div class="cmq-timeline-date">{{ v.created_at|date:"j F Y" }}</div>
         <h3 class="cmq-timeline-title">{{ v.diagnosis }}</h3>
         <div class="cmq-timeline-doctor">
           Dr. {{ v.doctor.full_name }}

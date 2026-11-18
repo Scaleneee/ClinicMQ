@@ -9,7 +9,7 @@
       <p class="cmq-eyebrow"><a href="{% url 'consultation:list' %}"><i class="bi bi-arrow-left"></i> Back</a></p>
       <h1 class="cmq-title">{{ c.diagnosis }}</h1>
       <p class="cmq-subtitle">
-        {{ c.created_at|date:"d/m/Y, g:i A" }} ·
+        {{ c.created_at|date:"j M Y, g:i A" }} ·
         <a href="{% url 'patients:detail' c.ticket.patient.pk %}">{{ c.ticket.patient.full_name|title }}</a>
         ({{ c.ticket.patient.date_of_birth|age }} yrs) · Dr. {{ c.doctor.full_name }}
       </p>
@@ -63,7 +63,7 @@
                   <td class="text-end">RM {{ i.amount|floatformat:2 }}</td>
                   <td>
                     {% if i.dispensed %}
-                      <span class="cmq-badge cmq-badge-checked-in" title="{{ i.dispensed_at|date:'d/m/Y g:i A' }}"><span class="cmq-badge-dot"></span>Dispensed</span>
+                      <span class="cmq-badge cmq-badge-checked-in" title="{{ i.dispensed_at|date:'j M Y g:i A' }}"><span class="cmq-badge-dot"></span>Dispensed</span>
                     {% else %}
                       <span class="cmq-badge cmq-badge-waiting"><span class="cmq-badge-dot"></span>Waiting</span>
                     {% endif %}
@@ -85,7 +85,7 @@
         {% if mc %}
           <dl class="cmq-details">
             <dt>MC no.</dt><dd>{{ mc.mc_no }}</dd>
-            <dt>Dates</dt><dd>{{ mc.start_date|date:"d/m/Y" }} – {{ mc_end|date:"d/m/Y" }}</dd>
+            <dt>Dates</dt><dd>{{ mc.start_date|date:"j M" }} – {{ mc_end|date:"j M Y" }}</dd>
             <dt>Days</dt><dd>{{ mc.days }}</dd>
             <dt>Reason</dt><dd>{{ mc.reason }}</dd>
           </dl>

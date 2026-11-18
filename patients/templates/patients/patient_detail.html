@@ -32,13 +32,13 @@
         <h2 class="cmq-section-title">Details</h2>
         <dl class="cmq-details">
           <dt>Gender</dt><dd>{{ patient.get_gender_display }}</dd>
-          <dt>Date of birth</dt><dd>{{ patient.date_of_birth|date:"d/m/Y" }}</dd>
+          <dt>Date of birth</dt><dd>{{ patient.date_of_birth|date:"j M Y" }}</dd>
           <dt>Age</dt><dd>{{ patient.date_of_birth|age }}</dd>
           <dt>Phone</dt><dd>{{ patient.phone }}</dd>
           <dt>Email</dt><dd>{{ patient.email|default:"–" }}</dd>
           <dt>Address</dt><dd>{{ patient.address|default:"–" }}</dd>
           <dt>Online account</dt><dd>{% if patient.user_id %}Yes{% else %}No (walk-in only){% endif %}</dd>
-          <dt>Registered</dt><dd>{{ patient.created_at|date:"d/m/Y" }}</dd>
+          <dt>Registered</dt><dd>{{ patient.created_at|date:"j M Y" }}</dd>
         </dl>
       </section>
     </div>

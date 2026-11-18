@@ -258,7 +258,7 @@ def _doctor_clashes(staff):
     for shift in staff.shifts.filter(shift_date__gte=today).order_by("shift_date", "session"):
         other = doctor_on_duty(shift.shift_date, shift.session)
         if other and other.pk != staff.pk:
-            return (f"{display_name(other)} is already on duty on {shift.shift_date:%d %b %Y} "
+            return (f"{display_name(other)} is already on duty on {shift.shift_date:%d/%m/%Y} "
                     f"({shift.get_session_display().lower()}). Remove one of the shifts first.")
     return None
 

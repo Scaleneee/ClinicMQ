@@ -157,11 +157,7 @@ def staff_reactivate(request, pk):
 # ---------------------------------------------------------------------------
 def _week_label(start):
     end = start + dt.timedelta(days=6)
-    if start.month == end.month:
-        return f"{start.day}–{end.day} {end:%b %Y}"
-    if start.year == end.year:
-        return f"{start.day} {start:%b} – {end.day} {end:%b %Y}"
-    return f"{start.day} {start:%b %Y} – {end.day} {end:%b %Y}"
+    return f"{start:%d/%m/%Y} – {end:%d/%m/%Y}"
 
 
 def _parse_week(value):
@@ -235,7 +231,7 @@ def shift_create(request):
         except PermissionDenied as e:
             messages.error(request, str(e))
         else:
-            messages.success(request, f"{acc.display_name(shift.staff)} added to {shift.shift_date:%a %d %b} "
+            messages.success(request, f"{acc.display_name(shift.staff)} added to {shift.shift_date:%a %d/%m/%Y} "
                                       f"({shift.get_session_display().lower()}).")
             return redirect(_roster_url_for(shift.shift_date))
 
@@ -276,5 +272,5 @@ def shift_delete(request, pk):
     shift = get_object_or_404(Shift.objects.select_related("staff"), pk=pk)
     day, name = shift.shift_date, acc.display_name(shift.staff)
     _run(request, lambda: acc.remove_shift(removed_by=request.user, shift_id=shift.pk),
-         f"{name} removed from {day:%a %d %b}.")
+         f"{name} removed from {day:%a %d/%m/%Y}.")
     return redirect(_roster_url_for(day))

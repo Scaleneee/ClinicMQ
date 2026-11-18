@@ -816,6 +816,7 @@ a.cmq-tag-mc:hover { border-color: var(--cmq-ink); color: var(--cmq-ink); }
 .cmq-drawer-logout button {
   display: inline-flex; align-items: center; gap: 10px; padding: 9px 0;
   border: 0; background: none; font: inherit; font-size: 18px; color: var(--cmq-red);
+  -webkit-appearance: none; appearance: none; border-radius: 0;
 }
 @media (min-width: 992px) {
   /* Desktop: the drawer turns back into the normal bar */

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static queue_tags %}
+{% load static queue_tags asset_tags %}
 
 {% block title %}{% if c %}Edit consultation{% else %}New consultation{% endif %} · ClinicMQ{% endblock %}
 
@@ -106,5 +106,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/consultation_form.js' %}"></script>
+<script src="{% asset 'js/consultation_form.js' %}"></script>
 {% endblock %}

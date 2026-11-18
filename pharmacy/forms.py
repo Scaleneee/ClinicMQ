@@ -20,11 +20,11 @@ class MedicineForm(forms.Form):
     reorder_level = forms.IntegerField(label="Reorder level", initial=10,
                                        widget=forms.NumberInput(attrs={"min": "0"}),
                                        help_text="Shows Low stock at or below this number.")
-    expiry_date = forms.DateField(label="Expiry date", widget=forms.DateInput(attrs={"type": "date"}))
+    expiry_date = forms.DateField(label="Expiry date", widget=forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"))
 
 
 class RestockForm(forms.Form):
     add_quantity = forms.IntegerField(label="Add quantity", widget=forms.NumberInput(attrs={"min": "1", "autofocus": True}))
     expiry_date = forms.DateField(label="New expiry date", required=False,
-                                  widget=forms.DateInput(attrs={"type": "date"}),
+                                  widget=forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
                                   help_text="The new stock's expiry date. Leave empty to keep the current one.")

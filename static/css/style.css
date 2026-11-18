@@ -806,13 +806,19 @@ a.cmq-tag-mc:hover { border-color: var(--cmq-ink); color: var(--cmq-ink); }
 /* ---------- Patient drawer (phones): slides in from the left over the page ---------- */
 .cmq-drawer.offcanvas { --bs-offcanvas-width: min(280px, 80vw); border-right: 1px solid var(--cmq-line); }
 .cmq-drawer .offcanvas-header { padding: 22px 20px 10px; }
-.cmq-drawer-name { font-family: var(--cmq-font); font-size: 21px; font-weight: 700; margin: 0; }
+.cmq-drawer-title { margin: 0; line-height: 1; }
+.cmq-drawer-title .cmq-wordmark { font-size: 26px; }
 .cmq-drawer .offcanvas-body { display: flex; flex-direction: column; padding: 4px 20px 24px; }
 .cmq-drawer .nav-link { font-size: 18px; color: var(--cmq-ink); padding: 9px 0; gap: 10px; }
 .cmq-drawer .nav-link .bi { width: 20px; color: var(--cmq-muted); }
 .cmq-drawer .nav-link.active { font-weight: 700; text-decoration: none; }
 .cmq-drawer .nav-link.active .bi { color: var(--cmq-ink); }
-.cmq-drawer-logout { margin-top: auto; padding-top: 16px; }
+.cmq-drawer-foot {
+  margin-top: auto; padding-top: 16px;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.cmq-drawer-user { font-size: 18px; color: var(--cmq-ink); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cmq-drawer-logout { flex-shrink: 0; }
 .cmq-drawer-logout button {
   display: inline-flex; align-items: center; gap: 10px; padding: 9px 0;
   border: 0; background: none; font: inherit; font-size: 18px; color: var(--cmq-red);

@@ -11,9 +11,9 @@
         <i class="bi bi-list"></i>
       </button>
 
-      <div class="offcanvas offcanvas-start cmq-drawer" tabindex="-1" id="cmqDrawer" aria-labelledby="cmqDrawerName">
+      <div class="offcanvas offcanvas-start cmq-drawer" tabindex="-1" id="cmqDrawer" aria-labelledby="cmqDrawerTitle">
         <div class="offcanvas-header">
-          <h2 class="cmq-drawer-name" id="cmqDrawerName">{{ user.get_full_name|title }}</h2>
+          <h2 class="cmq-drawer-title" id="cmqDrawerTitle"><span class="cmq-wordmark">ClinicMQ</span></h2>
           <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close menu"></button>
         </div>
         <div class="offcanvas-body">
@@ -26,11 +26,14 @@
             {% include "_nav_link.html" with name="patients:my_profile" icon="person" label="Profile" %}
           </ul>
 
-          {# Phone: Log out at the bottom of the drawer #}
-          <form method="post" action="{% url 'logout' %}" class="cmq-drawer-logout d-lg-none">
-            {% csrf_token %}
-            <button type="submit"><i class="bi bi-box-arrow-right"></i> Log out</button>
-          </form>
+          {# Phone: the patient's name and Log out at the bottom of the drawer #}
+          <div class="cmq-drawer-foot d-lg-none">
+            <span class="cmq-drawer-user">{{ user.get_full_name|title }}</span>
+            <form method="post" action="{% url 'logout' %}" class="cmq-drawer-logout">
+              {% csrf_token %}
+              <button type="submit"><i class="bi bi-box-arrow-right"></i> Log out</button>
+            </form>
+          </div>
 
           {# Desktop: the usual user menu on the right #}
           <div class="dropdown d-none d-lg-block">

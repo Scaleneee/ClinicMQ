@@ -777,3 +777,10 @@ a.cmq-tag-mc:hover { border-color: var(--cmq-ink); color: var(--cmq-ink); }
 .cmq-method-row + .cmq-method-row { border-top: 1px solid var(--cmq-line); }
 .cmq-bar { height: 6px; margin-top: 6px; border-radius: 999px; background: var(--cmq-line); overflow: hidden; }
 .cmq-bar span { display: block; height: 100%; background: var(--cmq-ink); }
+/* Sales summary: date range sits top right of the header, stacks below on small screens */
+.cmq-sales-range { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+.cmq-sales-range form, .cmq-sales-range .cmq-pills { justify-content: flex-end; }
+@media (max-width: 991.98px) {
+  .cmq-sales-range { width: 100%; align-items: flex-start; }
+  .cmq-sales-range form, .cmq-sales-range .cmq-pills { justify-content: flex-start; }
+}

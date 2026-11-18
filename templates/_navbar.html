@@ -11,6 +11,13 @@
         <i class="bi bi-list"></i>
       </button>
 
+      {# Phones: Profile as an icon at the right of the top bar #}
+      {% url "patients:my_profile" as profile_url %}
+      <a class="cmq-topbar-profile d-lg-none {% if request.path == profile_url %}active{% endif %}" href="{{ profile_url }}"
+         aria-label="Profile" {% if request.path == profile_url %}aria-current="page"{% endif %}>
+        <i class="bi bi-person"></i>
+      </a>
+
       <div class="offcanvas offcanvas-start cmq-drawer" tabindex="-1" id="cmqDrawer" aria-labelledby="cmqDrawerTitle">
         <div class="offcanvas-header">
           <h2 class="cmq-drawer-title" id="cmqDrawerTitle"><span class="cmq-wordmark">ClinicMQ</span></h2>
@@ -22,7 +29,8 @@
             {% include "_nav_link.html" with name="queueing:my_queue" icon="ticket-perforated" label="My queue" %}
             {% include "_nav_link.html" with name="patients:my_visits" icon="clock-history" label="My visits" %}
             {% include "_nav_link.html" with name="billing:my_bills" icon="receipt" label="My bills" %}
-            {% include "_nav_link.html" with name="patients:my_profile" icon="person" label="Profile" %}
+            {# Phones show Profile as an icon in the top bar instead #}
+            {% include "_nav_link.html" with name="patients:my_profile" icon="person" label="Profile" li_class="d-none d-lg-block" %}
           </ul>
 
           {# Phone: the patient's name and Log out at the bottom of the drawer #}

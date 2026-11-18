@@ -835,4 +835,15 @@ a.cmq-tag-mc:hover { border-color: var(--cmq-ink); color: var(--cmq-ink); }
 @media (max-width: 991.98px) {
   .cmq-navbar-patient .container-xl { justify-content: flex-start; gap: 14px; }
   .cmq-navbar-patient .navbar-toggler { order: -1; }
+  .cmq-navbar-patient .cmq-topbar-profile { order: 1; margin-left: auto; }
 }
+/* Square menu button, and the matching square Profile icon (patients, phones) */
+.cmq-navbar .navbar-toggler,
+.cmq-topbar-profile {
+  width: 42px; height: 42px; padding: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--cmq-line); border-radius: var(--cmq-radius);
+  font-size: 22px; line-height: 1; color: var(--cmq-ink); background: var(--cmq-paper);
+}
+.cmq-topbar-profile:hover { color: var(--cmq-ink); background: var(--cmq-wash); }
+.cmq-topbar-profile.active { background: var(--cmq-ink); border-color: var(--cmq-ink); color: #fff; }

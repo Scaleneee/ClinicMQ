@@ -778,6 +778,11 @@ a.cmq-tag-mc:hover { border-color: var(--cmq-ink); color: var(--cmq-ink); }
 .cmq-bar { height: 6px; margin-top: 6px; border-radius: 999px; background: var(--cmq-line); overflow: hidden; }
 .cmq-bar span { display: block; height: 100%; background: var(--cmq-ink); }
 /* Sales summary: date range sits top right of the header, stacks below on small screens */
-.cmq-sales-range { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: flex-end; gap: 8px; }
-.cmq-sales-range select { min-width: 150px; }
+.cmq-sales-range { display: flex; flex-wrap: nowrap; align-items: flex-end; justify-content: flex-end; gap: 8px; }
+.cmq-sales-range .cmq-field { flex: 0 0 170px; }
+.cmq-sales-range .btn { flex: 0 0 auto; min-height: 44px; }
 @media (max-width: 991.98px) { .cmq-sales-range { width: 100%; justify-content: flex-start; } }
+@media (max-width: 767.98px) {
+  .cmq-sales-range { flex-wrap: wrap; }
+  .cmq-sales-range .cmq-field { flex: 1 1 140px; }
+}

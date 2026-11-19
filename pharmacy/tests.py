@@ -3,7 +3,7 @@
 Run without touching Supabase:
     python manage.py test pharmacy --settings=clinicmq.settings_test
 """
-
+#
 import datetime as dt
 from decimal import Decimal
 from unittest import mock

@@ -201,9 +201,8 @@ def _raise(field_errors, row_errors):
     if field_errors:
         raise ValidationError(field_errors)
 
-
 # ---------------------------------------------------------------------------
-# Saving prescriptions and MCs
+# Saving prescriptions and MC
 # ---------------------------------------------------------------------------
 def _save_items(consultation, cleaned):
     """Replace the not-yet-dispensed items with `cleaned` (dispensed ones are kept)."""
@@ -307,7 +306,6 @@ def update_consultation(*, doctor_user, consultation_id, symptoms, diagnosis, co
 
 def can_delete(consultation):
     return not is_billed(consultation) and not has_dispensed(consultation)
-
 
 @transaction.atomic
 def delete_consultation(*, deleted_by, consultation_id):

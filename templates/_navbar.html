@@ -6,7 +6,7 @@
     {% if user.is_authenticated and user.role == "PATIENT" %}
       {# Patients: on phones the menu is a drawer that slides in from the left over the page. #}
       {# On desktop (lg and up) the same links show in the bar as usual. #}
-      <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#cmqDrawer"
+      <button class="navbar-toggler d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#cmqDrawer"
               aria-controls="cmqDrawer" aria-label="Open menu">
         <i class="bi bi-list"></i>
       </button>
@@ -62,7 +62,7 @@
       </div>
 
     {% elif user.is_authenticated %}
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#cmqNav"
+      <button class="navbar-toggler d-lg-none" type="button" data-bs-toggle="collapse" data-bs-target="#cmqNav"
               aria-controls="cmqNav" aria-expanded="false" aria-label="Toggle navigation">
         <i class="bi bi-list"></i>
       </button>
